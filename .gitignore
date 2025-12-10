@@ -1,0 +1,4 @@
+__pycache__/
+.venv/
+pagasa_parser_src/
+*.pyc

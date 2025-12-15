@@ -1,0 +1,29 @@
+From the highest to the lowest:
+
+1. Regions are mostly used to organize national services. Of the 18 regions, only one—the Bangsamoro Autonomous Region in Muslim Mindanao—has an elected government to which the central government has devolved competencies.
+
+2. Provinces, independent cities, and one independent municipality (Pateros)
+
+3. Component cities and municipalities within a province
+
+4. Barangays (formerly known and sometimes still referred to as barrios) within a city or municipality
+
+-------------------------------------------------
+Philippine LGU hierarchy (Wikipedia):
+
+{{chart top|[[Local government in the Philippines|Local government hierarchy]]|width={{{2}}}}}
+{{Tree chart/start|align=center}}
+{{Tree chart| | | | | | | | | | |pres | | | | | | | | |pres={{nowrap|[[President of the Philippines]]}}|border=1}}
+{{Tree chart| | | | | | |F|~|~|~|~|A|~|~|~|~|~|~|~|7|}}
+{{Tree chart| | | | | | |:| | | | | | | | | | | |auto | | |auto={{nowrap|[[Autonomous regions of the Philippines|Autonomous regions]]}}|border=1}}
+{{Tree chart| | | |F|~|~|A|~|~|7| | | | | |,|-|-|-|^|-|.}}
+{{Tree chart| | |prov | | | |city | | | |prov | | | |city|prov=[[Provinces of the Philippines|Provinces]]|city={{nowrap|[[Cities of the Philippines#Independent cities|Independent cities]]}}|border=1}}
+{{Tree chart| |,|-|^|-|.| | | |!| | | |,|-|^|-|.| | | |!}}
+{{Tree chart|city | |muni | | |!| | |city | |muni | | |!| |city={{nowrap|[[Cities of the Philippines|Component cities]]}}|muni=[[Municipalities of the Philippines|Municipalities]]|border=1}}
+{{Tree chart| |!| | | |!| | | |!| | | |!| | | |!| | | |!}}
+{{Tree chart|brgy | |brgy | |brgy | |brgy | |brgy | |brgy | |brgy=[[Barangay]]s|border=1}}
+{{Tree chart/end}}
+{{{1|The dashed lines emanating from the president means that the President only exercises ''general supervision'' on local government.}}}<br />{{nowrap|({{navbar|Philippine LGU hierarchy|mini=y}})}}
+{{chart bottom}}<noinclude>
+[[Category:Philippines politics and government templates]]
+</noinclude>

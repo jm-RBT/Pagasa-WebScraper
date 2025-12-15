@@ -1,0 +1,11 @@
+# Core
+pdfplumber==0.11.8
+requests==2.32.5
+
+# ML (Pinned for Python 3.8.10 compatibility)
+torch>=1.13.0,<2.5.0
+transformers>=4.30.0,<4.47.0
+pillow
+# pdf2image # Removed in favor of pypdfium2 as per plan
+pypdfium2
+timm

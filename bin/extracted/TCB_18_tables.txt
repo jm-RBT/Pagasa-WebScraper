@@ -1,0 +1,296 @@
+﻿[
+    {
+        "page_number": 1,
+        "tables": [
+            [
+                [
+                    "WILMA CONTINUES TO MOVE WEST NORTHWESTWARD WHILE OVER THE COASTAL WATERS OF EASTERN SAMAR",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Location of Center (10:00 PM)",
+                    null,
+                    null,
+                    null,
+                    "",
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "The center of Tropical Depression WILMA was estimated based\non all available data at over the coastal waters of Oras,\nEastern Samar (12.1\u00b0N, 125.6\u00b0E).",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Intensity",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Maximum sustained winds of 45 km/h near the center,\ngustiness of up to 55 km/h, and central pressure of 1004 hPa",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Present Movement",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "West northwestward Slowly",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Extent of Tropical Cyclone Winds",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Strong winds extend outwards up to 180 km from the center",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "TRACK AND INTENSITY FORECAST",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "Date and Time",
+                    "Center Position",
+                    null,
+                    null,
+                    null,
+                    "Intensity",
+                    null,
+                    "Movement\ndir. and\nspeed\n(km/h)"
+                ],
+                [
+                    null,
+                    "Lat.\n(\u00b0N)",
+                    "Lon.\n(\u00b0E)",
+                    "Location",
+                    null,
+                    "MSW\n(km/h)",
+                    "Cat.",
+                    null
+                ],
+                [
+                    "12-Hour Forecast\n8:00 AM\n07 December 2025",
+                    "12.1",
+                    "124.4",
+                    "Over the coastal waters of Calbayog, Samar",
+                    null,
+                    "45",
+                    "TD",
+                    "W 15"
+                ],
+                [
+                    "24-Hour Forecast\n8:00 PM\n07 December 2025",
+                    "11.7",
+                    "122.2",
+                    "In the vicinity of Ibajay, Aklan",
+                    null,
+                    "45",
+                    "TD",
+                    "W 20"
+                ],
+                [
+                    "36-Hour Forecast\n8:00 AM\n08 December 2025",
+                    "11.3",
+                    "120.0",
+                    "Over the coastal waters of Linapacan, Palawan",
+                    null,
+                    "45",
+                    "TD",
+                    "W 20"
+                ],
+                [
+                    "48-Hour Forecast\n8:00 PM\n08 December 2025",
+                    "10.9",
+                    "117.5",
+                    "190 km Northwest of Puerto Princesa City,\nPalawan",
+                    null,
+                    "45",
+                    "TD",
+                    "W 25"
+                ],
+                [
+                    "60-Hour Forecast\n8:00 AM\n09 December 2025",
+                    "10.5",
+                    "115.3",
+                    "125 km East Southeast of Pag-asa Island,\nKalayaan, Palawan",
+                    null,
+                    "45",
+                    "TD",
+                    "W 20"
+                ],
+                [
+                    "72-Hour Forecast\n8:00 PM\n09 December 2025",
+                    "10.1",
+                    "112.9",
+                    "185 km Southwest of Pag-asa Island, Kalayaan,\nPalawan (OUTSIDE PAR)",
+                    null,
+                    "45",
+                    "TD",
+                    "W 20"
+                ],
+                [
+                    "96-Hour Forecast\n8:00 PM\n10 December 2025",
+                    "9.8",
+                    "109.7",
+                    "520 km West Southwest of Pag-asa Island,\nKalayaan, Palawan (OUTSIDE PAR)",
+                    null,
+                    "-",
+                    "LOW",
+                    "W 15"
+                ]
+            ],
+            [
+                [
+                    "190 km Northwest of Puerto Princesa City,"
+                ],
+                [
+                    "Palawan"
+                ]
+            ],
+            [
+                [
+                    "125 km East Southeast of Pag-asa Island,"
+                ],
+                [
+                    "Kalayaan, Palawan"
+                ]
+            ],
+            [
+                [
+                    "185 km Southwest of Pag-asa Island, Kalayaan,"
+                ],
+                [
+                    "Palawan (OUTSIDE PAR)"
+                ]
+            ],
+            [
+                [
+                    "520 km West Southwest of Pag-asa Island,"
+                ],
+                [
+                    "Kalayaan, Palawan (OUTSIDE PAR)"
+                ]
+            ]
+        ]
+    },
+    {
+        "page_number": 2,
+        "tables": [
+            [
+                [
+                    "TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT",
+                    null,
+                    null,
+                    null
+                ],
+                [
+                    "TCWS No.",
+                    "Luzon",
+                    "Visayas",
+                    "Mindanao"
+                ],
+                [
+                    "1\nWind threat:\nStrong\nwinds",
+                    "Sorsogon, Masbate including\nTicao and Burias Islands,\nRomblon, the southern portion\nof Oriental Mindoro (Bulalacao,\nMansalay, Roxas,\nBongabong,Bansud), the\nsouthern portion of Occidental\nMindoro (Magsaysay, San Jose,\nRizal, Calintaan,Sablayan), and\nthe northernmost portion of\nPalawan (Araceli, Dumaran, El\nNido, Taytay, Roxas, San Vicente)\nincluding Cuyo, Calamian, and\nCagayancillo Islands",
+                    "Northern Samar, Eastern Samar, Samar, Biliran, the\nnorthern and central portions of Leyte (Tunga,\nPastrana, San Miguel, Mahaplag, Matag-Ob, Tolosa,\nPalo, Calubian, Leyte, Mayorga, Julita, Carigara,\nBabatngon, Dagami, Inopacan, Jaro, Abuyog, San\nIsidro, Santa Fe, Albuera, Villaba, La Paz, Palompon,\nMacarthur, Tabontabon, Tanauan, Merida, Ormoc City,\nIsabel, Javier, Dulag, Capoocan, Alangalang, Hindang,\nCity of Baybay, Burauen, Tabango, Tacloban City,\nKananga, Barugo), the northern and central portions\nof Cebu (Daanbantayan, Medellin, City of Bogo, San\nRemigio, Tabogon, Borbon, Tabuelan, Tuburan, Sogod,\nCatmon, Asturias, Carmen, Danao City, Balamban,\nCompostela, Liloan, Consolacion, Mandaue City, Cebu\nCity, City of Talisay, Minglanilla, Toledo City,\nPinamungahan, City of Naga, Lapu-Lapu City,\nCordova) including Bantayan Islands and Camotes\nIslands, the northern portion of Negros Oriental\n(Canlaon City, Vallehermoso, City of Guihulngan), the\nnorthern and central portions of Negros Occidental\n(Sagay City, City of Escalante, Toboso, Calatrava,\nEnrique B. Magalona, City of Victorias, Manapla, Cadiz\nCity, Bacolod City, City of Talisay, Silay City, Salvador\nBenedicto, San Carlos City, Murcia, Bago City, La\nCarlota City, La Castellana, Moises Padilla, Valladolid,\nPulupandan, San Enrique, Pontevedra, Isabela,\nHinigaran), Guimaras, Iloilo, Capiz, Aklan, and\nAntique including Caluya Islands",
+                    "-"
+                ],
+                [
+                    null,
+                    "Warning lead time: 36 hours\nRange of wind speeds: 39 to 61 km/h (Beaufort 6 to 7)\nPotential impacts of winds: Minimal to minor threat to life and property",
+                    null,
+                    null
+                ]
+            ]
+        ]
+    },
+    {
+        "page_number": 3,
+        "tables": [
+            [
+                [
+                    "OTHER HAZARDS AFFECTING LAND AREAS"
+                ],
+                [
+                    "Heavy Rainfall Outlook\nRefer to Weather Advisory No. 14 issued at 11:00 PM today for the heavy rainfall outlook due to Tropical Cyclone WILMA\nand Shear Line.\nSevere Winds\nThe wind signals warn the public of the general wind threat over an area due to the tropical cyclone. Local winds may be\nslightly stronger/enhanced in coastal and upland/mountainous areas exposed to winds. Winds are less strong in areas sheltered\nfrom the prevailing wind direction.\n\u2022 Minimal to minor impacts from strong winds are possible within any of the areas under Wind Signal No. 1.\nFurthermore the Northeast Monsoon will also bring strong to gale-force gusts over the following areas not under Wind Signal\n(especially in coastal and upland areas exposed to winds):\n\u2022 Today: Most of Luzon, Visayas, and Zamboanga Peninsula\n\u2022 Tomorrow (07 December): Most of Luzon, Visayas, and Zamboanga Peninsula\n\u2022 Monday (08 December): Most of Luzon"
+                ]
+            ],
+            [
+                [
+                    "HAZARDS AFFECTING COASTAL WATERS"
+                ],
+                [
+                    "Gale Warning is in effect over the northern and eastern seaboards of Luzon. Refer to Gale Warning No. 9 issued at 5:00 PM today.\n24-Hour Sea Condition Outlook\nUp to very rough seas over the following coastal waters:\n\u2022 Up to 5.0 m: The seaboards of mainland Cagayan, Isabela, and Aurora; the northern and eastern seaboards of Polillo Islands,\nCamarines Norte, and Camarines Sur.\n\u2022 Up to 4.5 m: The eastern seaboards of Batanes, Babuyan Islands, and northern mainland Quezon; the northern and eastern\nseaboards of Catanduanes.\n\u2022 Sea travel is risky for all types or tonnage of vessels. All mariners must remain in port or, if underway, seek shelter or\nsafe harbor as soon as possible until winds and waves subside.\nUp to rough seas over the following coastal waters:\n\u2022 Up to 4.0 m: The remaining seaboards of Batanes and Babuyan Islands; the seaboards of Ilocos Norte.\n\u2022 Up to 3.5 m: The eastern seaboards of Albay, Sorsogon, and Eastern Samar; the seaboards of Northern Samar and Kalayaan\nIslands.\n\u2022 Up to 3.0 m: The seaboards of Ilocos Sur, La Union; the eastern seaboards of Dinagat Islands, Siargao and Bucas Grande\nIslands, Surigao del Sur, and Davao Oriental.\n\u2022 Mariners of small seacrafts, including all types of motorbancas, are advised not to venture out to sea under these\nconditions, especially if inexperienced of operating ill-equipped vessels.\nUp to moderate to rough seas over the following coastal waters:\n\u2022 Up to 2.5 m: The western seaboards of Pangansinan and Palawan; the seaboards of Cuyo Islands; the western seaboards of\nAntique and Negros Occidental; the southern seaboards of Oriental Mindoro, Negros Oriental; the seaboards of Occidental\nMindoro, Romblon, and Aklan.\n\u2022 Up to 2.0 m: The remaining seaboards of Palawan, Quezon, and Camarines Sur; the seaboards of Zambales, Bataan,\nBatangas, and Marinduque; the northwestern seaboard of Masbate including Burias Islands; the remaining seaboard of Oriental\nMindoro and Davao Oriental; the southern seaboard of Davao Occidental; the northern seaboard of Zamboanga del Norte.\n\u2022 Mariners of motorbancas and similarly sized vessels are advised to take precautionary measures while venturing out\nto sea and, if possible, avoid navigation under these conditions."
+                ]
+            ]
+        ]
+    },
+    {
+        "page_number": 4,
+        "tables": [
+            [
+                [
+                    "TRACK AND INTENSITY OUTLOOK"
+                ],
+                [
+                    "\u2022 It must be emphasized that heavy rainfall and severe winds may still be experienced in localities outside the landfall\npoint and the forecast confidence cone. Refer to \u201cOther Hazards affecting Land Areas\u201d for more details.\nFurthermore, the track may still shift within the limit of the forecast confidence cone.\n\u2022 WILMA is forecast to move generally westward for majority of the forecast period. On the forecast track, the center of WILMA\nmay make its initial landfall over Eastern Samar or Northern Samar tonight. Afterwards, it will continue to traverse Visayas\nuntil tomorrow (07 December). It will then emerge over Sulu Sea and may pass over northern Palawan by Monday (08\nDecember) morning.\n\u2022 WILMA will likely remain as a tropical depression throughout its passage over Visayas and Palawan. However, due to dry\nintrusion from the Northeast monsoon, there is an increasing likelihood of weakening into a remnant low while traversing the\narea of Visayas."
+                ]
+            ]
+        ]
+    }
+]

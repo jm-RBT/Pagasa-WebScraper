@@ -19,9 +19,13 @@ def get_pdf_bytes(source: str):
         with open(source, 'rb') as f:
             return io.BytesIO(f.read())
 
-def parse_pdf(source: str):
+def parse_pdf(source: str, for_dataset: bool = False):
     """
     Reads the PDF, extracts table arrays, and then parses them into structural JSON.
+    
+    Args:
+        source: Path to PDF file or public PDF URL
+        for_dataset: If True, returns result without confidence fields (for dataset generation)
     """
     try:
         pdf_bytes = get_pdf_bytes(source)
@@ -40,7 +44,12 @@ def parse_pdf(source: str):
             
             # Pass the raw table data to the TableParser
             parser = TableParser(all_tables)
-            structured_result = parser.parse()
+            
+            # Use parse_for_dataset if generating dataset, otherwise use parse
+            if for_dataset:
+                structured_result = parser.parse_for_dataset()
+            else:
+                structured_result = parser.parse()
             
             # Add metadata about source
             structured_result["meta"]["source_file"] = source

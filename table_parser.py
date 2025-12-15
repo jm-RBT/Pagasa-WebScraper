@@ -137,6 +137,23 @@ class TableParser:
 
         return result
 
+    def parse_for_dataset(self) -> Dict[str, Any]:
+        """
+        Returns parsed result without confidence fields for dataset generation.
+        Useful for creating training datasets.
+        """
+        result = self.parse()
+        return self._strip_confidence(result)
+
+    def _strip_confidence(self, obj: Any) -> Any:
+        """Recursively removes 'confidence' fields from nested structures."""
+        if isinstance(obj, dict):
+            return {k: self._strip_confidence(v) for k, v in obj.items() if k != "confidence"}
+        elif isinstance(obj, list):
+            return [self._strip_confidence(item) for item in obj]
+        else:
+            return obj
+
     def _extract_simple_field(self, config_key: str) -> Dict[str, Any]:
         aliases = self.config["HEADER_ALIASES"][config_key]
         best_result = {"value": None, "confidence": 0.0}

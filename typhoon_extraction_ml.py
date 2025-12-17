@@ -9,7 +9,7 @@ extraction for 90%+ accuracy.
 import re
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import pdfplumber
 from datetime import datetime
 import json
@@ -172,7 +172,7 @@ class LocationMatcher:
         # No parentheses found
         return text.strip(), []
     
-    def parse_location_text_with_rules(self, text: str) -> List[Dict[str, str]]:
+    def parse_location_text_with_rules(self, text: str) -> List[Dict[str, Any]]:
         """
         Parse location text with specific rules:
         1. Comma separation: Each comma-separated token is an individual location entity
@@ -369,14 +369,14 @@ class LocationMatcher:
         
         # Merge pattern-matched locations with parsed entities
         # Use sets for efficient duplicate checking
-        island_groups_sets = {k: set(v) for k, v in island_groups.items()}
+        island_groups_unique = {k: set(v) for k, v in island_groups.items()}
         
         for location_lower, (island_group, original_name) in found_locations.items():
-            if island_group in island_groups_sets:
-                island_groups_sets[island_group].add(original_name)
+            if island_group in island_groups_unique:
+                island_groups_unique[island_group].add(original_name)
         
         # Convert sets back to lists
-        island_groups = {k: list(v) for k, v in island_groups_sets.items()}
+        island_groups = {k: list(v) for k, v in island_groups_unique.items()}
         
         # Remove empty categories and return
         result = {k: v for k, v in island_groups.items() if v}

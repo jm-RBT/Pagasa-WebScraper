@@ -26,7 +26,7 @@ Requirements:
 """
 
 import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+from tkinter import ttk, messagebox, scrolledtext, filedialog
 import json
 import threading
 from pathlib import Path
@@ -35,6 +35,7 @@ import pypdfium2 as pdfium
 from PIL import Image, ImageTk
 import sys
 import traceback
+import pdfplumber
 
 # Import the extraction logic
 try:
@@ -51,8 +52,10 @@ class PDFViewer(tk.Frame):
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
         self.current_pdf = None
+        self.current_pdf_path = None
         self.current_page = 0
         self.total_pages = 0
+        self.zoom_level = 1.0  # Default zoom level
         
         # Create canvas for PDF display with scrollbar
         self.canvas_frame = tk.Frame(self)
@@ -75,7 +78,14 @@ class PDFViewer(tk.Frame):
         self.scrollbar_x.config(command=self.canvas.xview)
         self.scrollbar_y.config(command=self.canvas.yview)
         
-        # Page navigation
+        # Add text selection support
+        self.canvas.bind("<Button-1>", self.on_canvas_click)
+        self.canvas.bind("<B1-Motion>", self.on_canvas_drag)
+        self.canvas.bind("<ButtonRelease-1>", self.on_canvas_release)
+        self.selection_rect = None
+        self.selection_start = None
+        
+        # Page navigation and zoom controls
         nav_frame = tk.Frame(self)
         nav_frame.pack(side=tk.BOTTOM, fill=tk.X, padx=5, pady=5)
         
@@ -84,6 +94,18 @@ class PDFViewer(tk.Frame):
         
         tk.Button(nav_frame, text="◀ Prev Page", command=self.prev_page).pack(side=tk.LEFT, padx=2)
         tk.Button(nav_frame, text="Next Page ▶", command=self.next_page).pack(side=tk.LEFT, padx=2)
+        
+        # Zoom controls
+        tk.Label(nav_frame, text="|").pack(side=tk.LEFT, padx=5)
+        tk.Button(nav_frame, text="🔍-", command=self.zoom_out, width=3).pack(side=tk.LEFT, padx=2)
+        self.zoom_label = tk.Label(nav_frame, text="100%", width=5)
+        self.zoom_label.pack(side=tk.LEFT, padx=2)
+        tk.Button(nav_frame, text="🔍+", command=self.zoom_in, width=3).pack(side=tk.LEFT, padx=2)
+        tk.Button(nav_frame, text="Reset", command=self.zoom_reset, width=5).pack(side=tk.LEFT, padx=2)
+        
+        # Copy text button
+        tk.Label(nav_frame, text="|").pack(side=tk.LEFT, padx=5)
+        tk.Button(nav_frame, text="📋 Copy Text", command=self.copy_page_text, width=10).pack(side=tk.LEFT, padx=2)
     
     def load_pdf(self, pdf_path: str):
         """Load a PDF file and display the first page"""
@@ -94,14 +116,17 @@ class PDFViewer(tk.Frame):
             
             # Open new PDF
             self.current_pdf = pdfium.PdfDocument(pdf_path)
+            self.current_pdf_path = pdf_path
             self.total_pages = len(self.current_pdf)
             self.current_page = 0
+            self.zoom_level = 1.0  # Reset zoom
             
             self.render_page()
             
         except Exception as e:
             messagebox.showerror("PDF Load Error", f"Failed to load PDF:\n{e}")
             self.current_pdf = None
+            self.current_pdf_path = None
             self.total_pages = 0
             self.current_page = 0
     
@@ -110,14 +135,16 @@ class PDFViewer(tk.Frame):
         if not self.current_pdf or self.total_pages == 0:
             self.canvas.delete("all")
             self.page_label.config(text="Page 0 of 0")
+            self.zoom_label.config(text="100%")
             return
         
         try:
             # Get the page
             page = self.current_pdf[self.current_page]
             
-            # Render at reasonable resolution (scale factor 2 = 144 DPI)
-            pil_image = page.render(scale=2).to_pil()
+            # Render at resolution based on zoom level (base scale 2 = 144 DPI)
+            scale = 2 * self.zoom_level
+            pil_image = page.render(scale=scale).to_pil()
             
             # Convert to PhotoImage
             self.photo = ImageTk.PhotoImage(pil_image)
@@ -129,11 +156,77 @@ class PDFViewer(tk.Frame):
             # Update scroll region
             self.canvas.config(scrollregion=self.canvas.bbox("all"))
             
-            # Update page label
+            # Update labels
             self.page_label.config(text=f"Page {self.current_page + 1} of {self.total_pages}")
+            self.zoom_label.config(text=f"{int(self.zoom_level * 100)}%")
             
         except Exception as e:
             messagebox.showerror("Render Error", f"Failed to render page:\n{e}")
+    
+    def zoom_in(self):
+        """Zoom in"""
+        if self.zoom_level < 3.0:  # Max 300%
+            self.zoom_level += 0.25
+            self.render_page()
+    
+    def zoom_out(self):
+        """Zoom out"""
+        if self.zoom_level > 0.25:  # Min 25%
+            self.zoom_level -= 0.25
+            self.render_page()
+    
+    def zoom_reset(self):
+        """Reset zoom to 100%"""
+        self.zoom_level = 1.0
+        self.render_page()
+    
+    def on_canvas_click(self, event):
+        """Handle mouse click on canvas"""
+        self.selection_start = (event.x, event.y)
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+        self.selection_rect = None
+    
+    def on_canvas_drag(self, event):
+        """Handle mouse drag on canvas"""
+        if self.selection_start:
+            x0, y0 = self.selection_start
+            x1, y1 = event.x, event.y
+            if self.selection_rect:
+                self.canvas.delete(self.selection_rect)
+            self.selection_rect = self.canvas.create_rectangle(
+                x0, y0, x1, y1,
+                outline="blue", width=2, dash=(4, 4)
+            )
+    
+    def on_canvas_release(self, event):
+        """Handle mouse release on canvas"""
+        if self.selection_rect:
+            self.canvas.delete(self.selection_rect)
+        self.selection_rect = None
+        self.selection_start = None
+    
+    def copy_page_text(self):
+        """Extract and copy text from current page"""
+        if not self.current_pdf_path:
+            messagebox.showinfo("No PDF", "No PDF loaded")
+            return
+        
+        try:
+            with pdfplumber.open(self.current_pdf_path) as pdf:
+                if self.current_page < len(pdf.pages):
+                    page = pdf.pages[self.current_page]
+                    text = page.extract_text()
+                    
+                    if text:
+                        # Copy to clipboard
+                        self.clipboard_clear()
+                        self.clipboard_append(text)
+                        messagebox.showinfo("Text Copied", f"Copied {len(text)} characters to clipboard")
+                    else:
+                        messagebox.showinfo("No Text", "No text found on this page")
+        except Exception as e:
+            messagebox.showerror("Text Extract Error", f"Failed to extract text:\n{e}")
     
     def next_page(self):
         """Go to next page"""
@@ -152,6 +245,7 @@ class PDFViewer(tk.Frame):
         if self.current_pdf:
             self.current_pdf.close()
             self.current_pdf = None
+            self.current_pdf_path = None
 
 
 class JSONEditor(tk.Frame):
@@ -223,6 +317,7 @@ class PDFAnnotationApp:
         self.current_index = 0
         self.extractor = None
         self.is_processing = False
+        self.pdf_folder = None
         
         # Setup UI
         self.setup_ui()
@@ -230,8 +325,8 @@ class PDFAnnotationApp:
         # Initialize extractor in background
         self.init_extractor()
         
-        # Load PDFs
-        self.load_pdf_list()
+        # Don't auto-load PDFs - wait for user to select folder
+        self.prompt_folder_selection()
     
     def setup_ui(self):
         """Create the user interface"""
@@ -287,7 +382,7 @@ class PDFAnnotationApp:
         # Progress bar
         self.progress_label = tk.Label(
             bottom_frame,
-            text="Ready",
+            text="Ready - Please select a folder",
             font=("Arial", 9),
             bg="#ecf0f1"
         )
@@ -303,6 +398,16 @@ class PDFAnnotationApp:
         button_frame = tk.Frame(bottom_frame, bg="#ecf0f1")
         button_frame.pack(side=tk.BOTTOM, pady=10)
         
+        tk.Button(
+            button_frame,
+            text="📁 Select Folder",
+            command=self.select_folder,
+            width=13,
+            font=("Arial", 10),
+            bg="#95a5a6",
+            fg="white"
+        ).pack(side=tk.LEFT, padx=5)
+        
         self.prev_button = tk.Button(
             button_frame,
             text="◀ Previous",
@@ -311,6 +416,17 @@ class PDFAnnotationApp:
             font=("Arial", 10)
         )
         self.prev_button.pack(side=tk.LEFT, padx=5)
+        
+        self.analyze_button = tk.Button(
+            button_frame,
+            text="🔍 Analyze",
+            command=self.analyze_current,
+            width=12,
+            font=("Arial", 10, "bold"),
+            bg="#e67e22",
+            fg="white"
+        )
+        self.analyze_button.pack(side=tk.LEFT, padx=5)
         
         self.save_next_button = tk.Button(
             button_frame,
@@ -334,19 +450,35 @@ class PDFAnnotationApp:
         
         tk.Button(
             button_frame,
-            text="🔄 Re-analyze",
-            command=self.reanalyze_current,
-            width=12,
-            font=("Arial", 10)
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Button(
-            button_frame,
             text="❌ Quit",
             command=self.quit_app,
             width=10,
             font=("Arial", 10)
         ).pack(side=tk.LEFT, padx=20)
+    
+    def prompt_folder_selection(self):
+        """Prompt user to select PDF folder on startup"""
+        self.root.after(500, self._show_folder_dialog)
+    
+    def _show_folder_dialog(self):
+        """Show folder selection dialog"""
+        result = messagebox.askyesno(
+            "Select PDF Folder",
+            "Would you like to select a folder containing PDFs to annotate?"
+        )
+        if result:
+            self.select_folder()
+    
+    def select_folder(self):
+        """Let user select folder containing PDFs"""
+        folder = filedialog.askdirectory(
+            title="Select Folder with PDFs",
+            initialdir=Path.cwd() / "dataset" / "pdfs" if (Path.cwd() / "dataset" / "pdfs").exists() else Path.cwd()
+        )
+        
+        if folder:
+            self.pdf_folder = Path(folder)
+            self.load_pdf_list()
     
     def init_extractor(self):
         """Initialize the TyphoonBulletinExtractor in background"""
@@ -363,35 +495,42 @@ class PDFAnnotationApp:
         threading.Thread(target=init_task, daemon=True).start()
     
     def load_pdf_list(self):
-        """Find all PDFs in dataset/pdfs/ directory"""
+        """Find all PDFs in selected folder"""
+        if not self.pdf_folder:
+            messagebox.showwarning(
+                "No Folder Selected",
+                "Please select a folder containing PDFs first."
+            )
+            return
+        
         try:
-            pdf_dir = Path("dataset/pdfs")
-            if not pdf_dir.exists():
+            if not self.pdf_folder.exists():
                 messagebox.showwarning(
                     "Directory Not Found",
-                    f"PDF directory not found: {pdf_dir}\n\nPlease create it and add PDFs."
+                    f"PDF directory not found: {self.pdf_folder}"
                 )
                 return
             
             # Find all PDFs recursively
-            self.pdf_files = sorted(list(pdf_dir.rglob("*.pdf")))
+            self.pdf_files = sorted(list(self.pdf_folder.rglob("*.pdf")))
             
             if not self.pdf_files:
                 messagebox.showinfo(
                     "No PDFs Found",
-                    f"No PDF files found in {pdf_dir}\n\nPlease add PDFs to annotate."
+                    f"No PDF files found in {self.pdf_folder}\n\nPlease select a different folder."
                 )
                 return
             
-            # Load first PDF
+            # Load first PDF (but don't analyze it)
             self.current_index = 0
             self.load_current_pdf()
+            self.update_progress(f"Loaded {len(self.pdf_files)} PDFs from folder", hide_after=3)
             
         except Exception as e:
             messagebox.showerror("Error", f"Failed to load PDF list:\n{e}")
     
     def load_current_pdf(self):
-        """Load and analyze the current PDF"""
+        """Load the current PDF (without analyzing)"""
         if not self.pdf_files:
             return
         
@@ -415,11 +554,26 @@ class PDFAnnotationApp:
                 self.json_editor.set_json(existing_data)
                 self.update_progress(f"Loaded existing annotation", hide_after=3)
             else:
-                # Analyze in background
-                self.analyze_pdf_async(current_file)
+                # Clear JSON editor - wait for user to click Analyze
+                self.json_editor.clear()
+                self.update_progress("PDF loaded - Click 'Analyze' to extract data", hide_after=5)
         
         except Exception as e:
             messagebox.showerror("Load Error", f"Failed to load PDF:\n{e}\n\n{traceback.format_exc()}")
+    
+    def analyze_current(self):
+        """Analyze the current PDF (manual trigger)"""
+        if not self.pdf_files:
+            messagebox.showinfo("No PDF", "No PDF loaded. Please select a folder first.")
+            return
+        
+        if self.is_processing:
+            messagebox.showinfo("Processing", "Please wait for current operation to complete.")
+            return
+        
+        current_file = self.pdf_files[self.current_index]
+        self.json_editor.clear()
+        self.analyze_pdf_async(current_file)
     
     def analyze_pdf_async(self, pdf_path: Path):
         """Analyze PDF in background thread"""
@@ -463,27 +617,20 @@ class PDFAnnotationApp:
             self.json_editor.set_json({"error": "No data extracted"})
             self.update_progress(f"No data extracted", hide_after=5)
     
-    def reanalyze_current(self):
-        """Re-analyze the current PDF"""
-        if not self.pdf_files:
-            return
-        
-        if self.is_processing:
-            messagebox.showinfo("Processing", "Please wait for current operation to complete.")
-            return
-        
-        if messagebox.askyesno("Re-analyze", "Re-analyze this PDF? Current edits will be lost."):
-            current_file = self.pdf_files[self.current_index]
-            self.json_editor.clear()
-            self.analyze_pdf_async(current_file)
     
     def get_annotation_path(self, pdf_path: Path) -> Path:
         """Get the annotation file path for a PDF"""
-        # Get relative path from dataset/pdfs/
-        pdf_dir = Path("dataset/pdfs")
-        relative_path = pdf_path.relative_to(pdf_dir)
+        # Get relative path from the selected folder
+        if self.pdf_folder:
+            try:
+                relative_path = pdf_path.relative_to(self.pdf_folder)
+            except ValueError:
+                # If pdf_path is not relative to pdf_folder, use just the filename
+                relative_path = Path(pdf_path.name)
+        else:
+            relative_path = Path(pdf_path.name)
         
-        # Create annotation path
+        # Create annotation path in dataset/pdfs_annotation/
         annotation_dir = Path("dataset/pdfs_annotation") / relative_path.parent
         annotation_path = annotation_dir / f"{pdf_path.stem}.json"
         

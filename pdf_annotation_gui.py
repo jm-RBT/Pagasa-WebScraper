@@ -229,7 +229,10 @@ class PDFViewer(tk.Frame):
     
     def on_canvas_click(self, event):
         """Handle mouse click on canvas - start text selection"""
-        self.selection_start = (event.x, event.y)
+        # Convert window coordinates to canvas coordinates (accounts for scrolling)
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        self.selection_start = (canvas_x, canvas_y)
         if self.selection_rect:
             self.canvas.delete(self.selection_rect)
         self.selection_rect = None
@@ -238,8 +241,12 @@ class PDFViewer(tk.Frame):
     def on_canvas_drag(self, event):
         """Handle mouse drag on canvas - show selection rectangle"""
         if self.selection_start:
+            # Convert window coordinates to canvas coordinates (accounts for scrolling)
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+            
             x0, y0 = self.selection_start
-            x1, y1 = event.x, event.y
+            x1, y1 = canvas_x, canvas_y
             
             # Ensure proper rectangle coordinates
             left = min(x0, x1)
@@ -263,8 +270,12 @@ class PDFViewer(tk.Frame):
     def on_canvas_release(self, event):
         """Handle mouse release on canvas - select text in rectangle"""
         if self.selection_start and self.selection_rect:
+            # Convert window coordinates to canvas coordinates (accounts for scrolling)
+            canvas_x = self.canvas.canvasx(event.x)
+            canvas_y = self.canvas.canvasy(event.y)
+            
             x0, y0 = self.selection_start
-            x1, y1 = event.x, event.y
+            x1, y1 = canvas_x, canvas_y
             
             # Ensure proper rectangle coordinates
             sel_left = min(x0, x1)

@@ -180,8 +180,12 @@ class LocationMatcher:
         3. Duplicates: Same name in different island groups are both kept and tagged
         4. Vague locations: Kept as-is and assigned to "Other" island group
         
+        IMPORTANT: This method is designed for parsing clean, comma-separated location lists,
+        NOT for extracting locations from arbitrary text or bulletin sections.
+        Use extract_locations_with_regions() for finding locations in bulletin text.
+        
         Args:
-            text: Raw location text to parse
+            text: Clean comma-separated location list (e.g., "Batanes, Cagayan, Isabela (Santo Tomas, Quezon)")
             
         Returns:
             List of location entities with structure:
@@ -192,6 +196,13 @@ class LocationMatcher:
                 'island_group': str,       # 'Luzon', 'Visayas', 'Mindanao', or 'Other'
                 'is_vague': bool          # Whether this is a vague location
             }
+            
+        Example:
+            >>> lm = LocationMatcher()
+            >>> text = "Batanes, the northwestern portion of Isabela (Santo Tomas, Quezon), Apayao"
+            >>> entities = lm.parse_location_text_with_rules(text)
+            >>> len(entities)  # Returns 3 entities
+            3
         """
         if not text or not text.strip():
             return []
@@ -288,24 +299,7 @@ class LocationMatcher:
         Extract all mentioned locations including regions and classify by island group.
         Regions are captured for proper mapping to island groups.
         Only returns the highest-priority version of each location name.
-        Uses parse_location_text_with_rules internally for rule-based parsing,
-        then falls back to pattern matching for any remaining unmatched locations.
         """
-        # First, try the new rule-based parsing
-        entities = self.parse_location_text_with_rules(text)
-        
-        # Build result from parsed entities
-        island_groups = {'Luzon': [], 'Visayas': [], 'Mindanao': [], 'Other': []}
-        
-        for entity in entities:
-            island_group = entity['island_group']
-            raw_text = entity['raw_text']
-            
-            if island_group in island_groups:
-                island_groups[island_group].append(raw_text)
-        
-        # Fallback: Also do pattern matching for locations that may not have been caught
-        # This maintains backward compatibility with existing extraction logic
         found_locations = {}  # Track: location_name_lower -> (island_group, original_name)
         
         text_lower = text.lower()
@@ -367,16 +361,11 @@ class LocationMatcher:
                 if found:
                     found_locations[region_lower] = (target_island_group, region_name)
         
-        # Merge pattern-matched locations with parsed entities
-        # Use sets for efficient duplicate checking
-        island_groups_unique = {k: set(v) for k, v in island_groups.items()}
-        
+        # Group by island group
+        island_groups = {'Luzon': [], 'Visayas': [], 'Mindanao': [], 'Other': []}
         for location_lower, (island_group, original_name) in found_locations.items():
-            if island_group in island_groups_unique:
-                island_groups_unique[island_group].add(original_name)
-        
-        # Convert sets back to lists
-        island_groups = {k: list(v) for k, v in island_groups_unique.items()}
+            if island_group in island_groups:
+                island_groups[island_group].append(original_name)
         
         # Remove empty categories and return
         result = {k: v for k, v in island_groups.items() if v}

@@ -9,7 +9,7 @@ extraction for 90%+ accuracy.
 import re
 import pandas as pd
 from pathlib import Path
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import pdfplumber
 from datetime import datetime
 import json
@@ -99,6 +99,200 @@ class LocationMatcher:
                 return island_group
         
         return None
+    
+    def _is_vague_location(self, text: str) -> bool:
+        """
+        Determine if a location text is vague or non-specific.
+        Vague locations include phrases like "most of Luzon", "northeastern Mindanao", 
+        "Eastern Visayas" without specific places, region-only mentions, etc.
+        
+        Note: If the text has parenthetical sub-locations, it's generally NOT vague
+        because the sub-locations make it specific.
+        """
+        text_lower = text.lower().strip()
+        
+        # If text has parentheses with content, check if it has sub-locations
+        # If it does, it's not vague (the sub-locations make it specific)
+        if '(' in text and ')' in text:
+            paren_match = re.search(r'\((.*?)\)', text)
+            if paren_match and paren_match.group(1).strip():
+                # Has non-empty parenthetical content - likely specific sub-locations
+                # Only consider vague if the parenthetical content itself is vague
+                paren_content = paren_match.group(1).lower()
+                if not any(phrase in paren_content for phrase in ['etc', 'and others', 'among others']):
+                    return False
+        
+        # Vague qualifiers
+        vague_phrases = [
+            'most of', 'much of', 'parts of', 'portions of', 'areas of',
+            'northeastern', 'northwestern', 'southeastern', 'southwestern',
+            'northern', 'southern', 'eastern', 'western', 'central',
+            'rest of', 'remaining', 'entire', 'whole'
+        ]
+        
+        # Check if it contains vague qualifiers
+        for phrase in vague_phrases:
+            if phrase in text_lower:
+                return True
+        
+        # Check if it's only a region name without specific locations
+        # (if text only contains region/island group names with no municipalities/cities)
+        island_groups = ['luzon', 'visayas', 'mindanao']
+        region_only_keywords = island_groups + list(self.REGION_MAPPING.keys())
+        
+        # If text is short and matches a general region pattern
+        words = text_lower.split()
+        if len(words) <= 4:
+            for keyword in region_only_keywords:
+                if keyword.lower() in text_lower:
+                    return True
+        
+        return False
+    
+    def _parse_parenthetical_content(self, text: str) -> Tuple[str, List[str]]:
+        """
+        Parse parenthetical sub-locations from text.
+        Returns (main_location, sub_locations_list).
+        Example: "northwestern Isabela (Santo Tomas, Santa Maria)" 
+        -> ("northwestern Isabela", ["Santo Tomas", "Santa Maria"])
+        """
+        # Find parentheses
+        paren_pattern = r'^(.*?)\s*\((.*?)\)\s*$'
+        match = re.match(paren_pattern, text.strip())
+        
+        if match:
+            main_location = match.group(1).strip()
+            paren_content = match.group(2).strip()
+            
+            # Split sub-locations by comma
+            sub_locations = [sub.strip() for sub in paren_content.split(',') if sub.strip()]
+            
+            return main_location, sub_locations
+        
+        # No parentheses found
+        return text.strip(), []
+    
+    def parse_location_text_with_rules(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Parse location text with specific rules:
+        1. Comma separation: Each comma-separated token is an individual location entity
+        2. Parenthetical sub-locations: Content in () is kept with main location as one entity
+        3. Duplicates: Same name in different island groups are both kept and tagged
+        4. Vague locations: Kept as-is and assigned to "Other" island group
+        
+        IMPORTANT: This method is designed for parsing clean, comma-separated location lists,
+        NOT for extracting locations from arbitrary text or bulletin sections.
+        Use extract_locations_with_regions() for finding locations in bulletin text.
+        
+        Args:
+            text: Clean comma-separated location list (e.g., "Batanes, Cagayan, Isabela (Santo Tomas, Quezon)")
+            
+        Returns:
+            List of location entities with structure:
+            {
+                'raw_text': str,           # Original text including parentheses
+                'main_location': str,      # Main location name
+                'sub_locations': List[str], # Sub-location names if any
+                'island_group': str,       # 'Luzon', 'Visayas', 'Mindanao', or 'Other'
+                'is_vague': bool          # Whether this is a vague location
+            }
+            
+        Example:
+            >>> lm = LocationMatcher()
+            >>> text = "Batanes, the northwestern portion of Isabela (Santo Tomas, Quezon), Apayao"
+            >>> entities = lm.parse_location_text_with_rules(text)
+            >>> len(entities)  # Returns 3 entities
+            3
+        """
+        if not text or not text.strip():
+            return []
+        
+        location_entities = []
+        
+        # Step 1: Split by comma, but respect parentheses
+        # We need to split by commas that are NOT inside parentheses
+        tokens = []
+        current_token = ""
+        paren_depth = 0
+        
+        for char in text:
+            if char == '(':
+                paren_depth += 1
+                current_token += char
+            elif char == ')':
+                paren_depth -= 1
+                current_token += char
+            elif char == ',' and paren_depth == 0:
+                # This comma is outside parentheses - it's a separator
+                if current_token.strip():
+                    tokens.append(current_token.strip())
+                current_token = ""
+            else:
+                current_token += char
+        
+        # Don't forget the last token
+        if current_token.strip():
+            tokens.append(current_token.strip())
+        
+        # Step 2: Process each token
+        for token in tokens:
+            # Parse parenthetical content
+            main_location, sub_locations = self._parse_parenthetical_content(token)
+            
+            # Check if vague
+            is_vague = self._is_vague_location(token)
+            
+            # Determine island group
+            if is_vague:
+                island_group = 'Other'
+            else:
+                # Try to find island group from main location
+                island_group = self.find_island_group(main_location)
+                
+                # If not found and there are sub-locations, try first sub-location
+                if not island_group and sub_locations:
+                    island_group = self.find_island_group(sub_locations[0])
+                
+                # Default to 'Other' if still not found
+                if not island_group:
+                    island_group = 'Other'
+            
+            # Create entity
+            entity = {
+                'raw_text': token,
+                'main_location': main_location,
+                'sub_locations': sub_locations,
+                'island_group': island_group,
+                'is_vague': is_vague
+            }
+            
+            location_entities.append(entity)
+        
+        # Step 3: Handle duplicates with different island groups
+        # Group by main_location to find duplicates
+        location_map = {}
+        for entity in location_entities:
+            key = entity['main_location'].lower()
+            if key not in location_map:
+                location_map[key] = []
+            location_map[key].append(entity)
+        
+        # Filter: keep all if they have different island groups, otherwise keep one
+        final_entities = []
+        for key, entities_list in location_map.items():
+            if len(entities_list) == 1:
+                final_entities.extend(entities_list)
+            else:
+                # Check if they belong to different island groups
+                island_groups_set = set(e['island_group'] for e in entities_list)
+                if len(island_groups_set) > 1:
+                    # Different island groups - keep all with tagging
+                    final_entities.extend(entities_list)
+                else:
+                    # Same island group - keep first one
+                    final_entities.append(entities_list[0])
+        
+        return final_entities
     
     def extract_locations_with_regions(self, text: str) -> Dict[str, List[str]]:
         """

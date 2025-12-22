@@ -1,5 +1,5 @@
 __pycache__/
 .venv/
-pagasa_parser_src/
+bin/pagasa_parser_src/
 dataset/
 *.pyc

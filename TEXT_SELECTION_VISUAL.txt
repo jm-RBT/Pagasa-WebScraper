@@ -1,0 +1,290 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║            SELECTIVE TEXT SELECTION - VISUAL DEMONSTRATION                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+## STEP 1: CLICK AND START DRAGGING
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ 📄 PDF Viewer                                                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  SEVERE WEATHER BULLETIN #03                                               │
+│  ════════════════════════════                                              │
+│                                                                            │
+│  Tropical Cyclone PEPITO (KAREN)                                           │
+│  Advisory No. 15                                                           │
+│                                                                            │
+│  🖱️ ← Click here                                                          │
+│  Location: 60 km NE of Manila, Luzon                                       │
+│  Wind Speed: 150 km/h (Category 2)                                         │
+│  Movement: West-Northwest at 20 km/h                                       │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+## STEP 2: DRAG TO SELECT AREA (Blue Rectangle Appears)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ 📄 PDF Viewer                                                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  SEVERE WEATHER BULLETIN #03                                               │
+│  ════════════════════════════                                              │
+│                                                                            │
+│  Tropical Cyclone PEPITO (KAREN)                                           │
+│  Advisory No. 15                                                           │
+│                                                                            │
+│  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                            │
+│  ┃ Location: 60 km NE of Manila, Luzon     ┃ ← Blue semi-transparent     │
+│  ┃ Wind Speed: 150 km/h (Category 2)       ┃   selection rectangle       │
+│  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛   (while dragging)        │
+│  Movement: West-Northwest at 20 km/h                                       │
+│                                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+                          ↑ Drag here to end selection
+
+## STEP 3: RELEASE MOUSE (Selection Turns Green)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ 📄 PDF Viewer                                                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  SEVERE WEATHER BULLETIN #03                                               │
+│  ════════════════════════════                                              │
+│                                                                            │
+│  Tropical Cyclone PEPITO (KAREN)                                           │
+│  Advisory No. 15                                                           │
+│                                                                            │
+│  ╔═══════════════════════════════════════════════╗                         │
+│  ║ Location: 60 km NE of Manila, Luzon      ║ ← Green outline            │
+│  ║ Wind Speed: 150 km/h (Category 2)        ║   (text selected!)         │
+│  ╚═══════════════════════════════════════════════╝                         │
+│  Movement: West-Northwest at 20 km/h                                       │
+│                                                                            │
+│  [◀ Prev] [Next ▶] | [🔍-] [100%] [🔍+] [Reset] | [📋 Copy Selected]     │
+│                                                           ↑                │
+│                                                     Click here             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+## STEP 4: CLICK "COPY SELECTED" OR PRESS CTRL+C
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ 📄 PDF Viewer                                                              │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                            │
+│  SEVERE WEATHER BULLETIN #03                                               │
+│  ════════════════════════════                                              │
+│                      ┌──────────────────────────────────┐                  │
+│  Tropical Cyclone PE │  ✓ Text Copied                  │                  │
+│  Advisory No. 15     │                                 │                  │
+│                      │  Copied 77 characters:          │                  │
+│  Location: 60 km NE  │                                 │                  │
+│  Wind Speed: 150 km/ │  Location: 60 km NE of Manila,  │                  │
+│  Movement: West-Nort │  Luzon Wind Speed: 150 km/h ... │                  │
+│                      │                                 │                  │
+│                      │            [OK]                 │                  │
+│                      └──────────────────────────────────┘                  │
+│                                                                            │
+│  [◀ Prev] [Next ▶] | [🔍-] [100%] [🔍+] [Reset] | [📋 Copy Selected]     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## DIFFERENT SELECTION PATTERNS
+
+### Pattern 1: Select Single Word
+┌─────────────────────────────┐
+│ Tropical ┏━━━━━━━┓ PEPITO   │
+│         ┃Cyclone┃           │
+│         ┗━━━━━━━┛           │
+└─────────────────────────────┘
+Result: "Cyclone"
+
+### Pattern 2: Select Line
+┌─────────────────────────────────────────────┐
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │
+│ ┃ Wind Speed: 150 km/h (Category 2)     ┃ │
+│ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
+└─────────────────────────────────────────────┘
+Result: "Wind Speed: 150 km/h (Category 2)"
+
+### Pattern 3: Select Partial Text
+┌─────────────────────────────────────────────┐
+│ Location: ┏━━━━━━━━━━━━━┓ Manila, Luzon    │
+│           ┃60 km NE of ┃                   │
+│           ┗━━━━━━━━━━━━━┛                   │
+└─────────────────────────────────────────────┘
+Result: "60 km NE of "
+
+### Pattern 4: Select Multiple Lines
+┌─────────────────────────────────────────────┐
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓ │
+│ ┃ Location: 60 km NE of Manila, Luzon   ┃ │
+│ ┃ Wind Speed: 150 km/h (Category 2)     ┃ │
+│ ┃ Movement: West-Northwest at 20 km/h   ┃ │
+│ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ │
+└─────────────────────────────────────────────┘
+Result: "Location: 60 km NE of Manila, Luzon 
+         Wind Speed: 150 km/h (Category 2) 
+         Movement: West-Northwest at 20 km/h"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SELECTION WITH ZOOM
+
+### At 100% Zoom (Normal)
+┌─────────────────────────────────────────┐
+│ Location: ┏━━━━━━━━┓ of Manila          │
+│           ┃60 km NE┃                    │
+│           ┗━━━━━━━━┛                    │
+│                                         │
+│ [🔍-] [100%] [🔍+]                      │
+└─────────────────────────────────────────┘
+
+### At 150% Zoom (Zoomed In)
+┌─────────────────────────────────────────┐
+│ Location:                               │
+│ ┏━━━━━━━━━━━━━┓                         │
+│ ┃ 60 km NE   ┃  of                     │
+│ ┗━━━━━━━━━━━━━┛                         │
+│ Manila                                  │
+│                                         │
+│ [🔍-] [150%] [🔍+]                      │
+└─────────────────────────────────────────┘
+Better precision for small text!
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## TECHNICAL FLOW DIAGRAM
+
+┌──────────────┐
+│ User Action  │
+│ Click & Drag │
+└──────┬───────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ Extract Text with Coords│
+│ • Get all characters    │
+│ • Get x,y,width,height  │
+│ • Scale to zoom level   │
+└──────┬──────────────────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ Mouse Drag Detection    │
+│ • Track start position  │
+│ • Track end position    │
+│ • Create rectangle      │
+└──────┬──────────────────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ Find Overlapping Chars  │
+│ • Check each character  │
+│ • Test rectangle overlap│
+│ • Collect matching chars│
+└──────┬──────────────────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ Sort Characters         │
+│ • Sort by y (top→bottom)│
+│ • Sort by x (left→right)│
+│ • Natural reading order │
+└──────┬──────────────────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ Build Text String       │
+│ • Join characters       │
+│ • Preserve order        │
+│ • Store in selection    │
+└──────┬──────────────────┘
+       │
+       ▼
+┌─────────────────────────┐
+│ User Clicks Copy        │
+│ • Copy to clipboard     │
+│ • Show confirmation     │
+│ • Display preview       │
+└─────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VISUAL FEEDBACK STATES
+
+┌──────────────────────────────────────────────────────────────┐
+│ STATE 1: IDLE (No Selection)                                 │
+├──────────────────────────────────────────────────────────────┤
+│  Plain PDF view, no rectangles                               │
+│  Ready for selection                                         │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ STATE 2: DRAGGING (Blue Rectangle)                           │
+├──────────────────────────────────────────────────────────────┤
+│  ┏━━━━━━━━━━━━━━━━━━━━━━┓                                    │
+│  ┃ Semi-transparent blue┃                                    │
+│  ┗━━━━━━━━━━━━━━━━━━━━━━┛                                    │
+│  Shows selection area while mouse is held down               │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ STATE 3: SELECTED (Green Rectangle - Brief)                  │
+├──────────────────────────────────────────────────────────────┤
+│  ╔═══════════════════════╗                                   │
+│  ║ Solid green outline  ║                                   │
+│  ╚═══════════════════════╝                                   │
+│  Confirms text is selected, fades after 300ms                │
+└──────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────┐
+│ STATE 4: COPIED (Message Dialog)                             │
+├──────────────────────────────────────────────────────────────┤
+│  ┌────────────────────────────┐                              │
+│  │ ✓ Text Copied              │                              │
+│  │ Copied 45 characters:      │                              │
+│  │ [preview of text...]       │                              │
+│  │         [OK]               │                              │
+│  └────────────────────────────┘                              │
+└──────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## COMPARISON: OLD VS NEW
+
+╔═══════════════════════════════════════════════════════════════╗
+║ OLD: Copy All Page Text                                       ║
+╚═══════════════════════════════════════════════════════════════╝
+
+[📋 Copy Text] → Copies entire page
+                 ↓
+"SEVERE WEATHER BULLETIN #03
+Tropical Cyclone PEPITO (KAREN)
+Advisory No. 15
+Location: 60 km NE of Manila, Luzon
+Wind Speed: 150 km/h (Category 2)
+Movement: West-Northwest at 20 km/h
+... (ALL text on page)"
+
+❌ No control over what gets copied
+❌ Must manually edit after pasting
+❌ Copies headers, footers, everything
+
+╔═══════════════════════════════════════════════════════════════╗
+║ NEW: Select Specific Text                                     ║
+╚═══════════════════════════════════════════════════════════════╝
+
+1. Drag over "60 km NE of Manila, Luzon"
+2. [📋 Copy Selected]
+                 ↓
+"60 km NE of Manila, Luzon"
+
+✅ Full control over selection
+✅ Copy exactly what you need
+✅ No manual editing required
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Feature implemented in commit 9c32453
+

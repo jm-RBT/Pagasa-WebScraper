@@ -248,45 +248,8 @@ class SignalWarningExtractor:
                     
                     i += 1
                 
-                # Parse location data: collect lines, filtering out impact descriptions
-                # Strategy:
-                # 1. Skip lines that start with "(Strong winds"  - extract location from them
-                # 2. Skip fragments that are clearly part of impact descriptions (prevailing, expected, hours)
-                # 3. Keep location-like content
-                location_lines = []
-                impact_description_mode = False  # Track if we're in an impact description section
-                
-                for line_text in raw_lines:
-                    line_lower = line_text.lower()
-                    
-                    # If we see opening paren followed by impact keywords, enter impact mode
-                    if line_lower.startswith('(') and any(kw in line_lower for kw in ['strong winds', 'prevailing', 'expected']):
-                        impact_description_mode = True
-                        # Try to extract location from this line (e.g., "(Strong winds portion of mainland Cagayan (Santa Ana)")
-                        # We want to keep "portion of mainland Cagayan (Santa Ana)"
-                        location_match = re.search(r'(?:portion of|area of|island of|islands of|province of|city of|municipality of|municipalities of|barangay of|barangays of|northern|southern|eastern|western)\s+(.+)', line_text, re.IGNORECASE)
-                        if location_match:
-                            # Extract the matched portion INCLUDING the prefix word
-                            match_text = line_text[location_match.start():]
-                            location_lines.append(match_text.strip())
-                        continue
-                    
-                    # If in impact mode, skip lines until we see a location keyword
-                    if impact_description_mode:
-                        # Look for location keywords to exit impact mode
-                        if any(loc in line_text for loc in ['Island', 'Islands', 'Province', 'City', 'Municipality', 'Barangay', 'Region']):
-                            impact_description_mode = False
-                            location_lines.append(line_text)
-                        # Skip if this looks like impact text continuation
-                        elif any(kw in line_lower for kw in ['prevailing', 'expected', 'within', 'hours', 'threat', 'property', 'danger', 'damage']):
-                            continue
-                        else:
-                            # Might be location continuation, keep it
-                            location_lines.append(line_text)
-                        continue
-                    
-                    # Normal case: add location line
-                    location_lines.append(line_text)
+                # Filter out impact description lines using shared method
+                location_lines = self._filter_impact_descriptions_from_location_lines(raw_lines)
                 
                 # Join location lines
                 full_text = ' '.join(location_lines)
@@ -376,6 +339,56 @@ class SignalWarningExtractor:
         # Default to Format 1 if header exists (safest for backward compatibility)
         return True
     
+    def _filter_impact_descriptions_from_location_lines(self, raw_lines: List[str]) -> List[str]:
+        """
+        Filter out impact description lines from raw location text lines.
+        
+        This method extracts location information while filtering out impact descriptions
+        like "(Strong winds prevailing...)" that often appear in signal tables.
+        
+        Args:
+            raw_lines: List of raw text lines that may contain both locations and impact descriptions
+            
+        Returns:
+            List of filtered lines containing only location information
+        """
+        location_lines = []
+        impact_description_mode = False
+        
+        for line_text in raw_lines:
+            line_lower = line_text.lower()
+            
+            # If we see opening paren followed by impact keywords, enter impact mode
+            if line_lower.startswith('(') and any(kw in line_lower for kw in ['strong winds', 'prevailing', 'expected']):
+                impact_description_mode = True
+                # Try to extract location from this line (e.g., "(Strong winds portion of mainland Cagayan (Santa Ana)")
+                # We want to keep "portion of mainland Cagayan (Santa Ana)"
+                location_match = re.search(r'(?:portion of|area of|island of|islands of|province of|city of|municipality of|municipalities of|barangay of|barangays of|northern|southern|eastern|western)\s+(.+)', line_text, re.IGNORECASE)
+                if location_match:
+                    # Extract the matched portion INCLUDING the prefix word
+                    match_text = line_text[location_match.start():]
+                    location_lines.append(match_text.strip())
+                continue
+            
+            # If in impact mode, skip lines until we see a location keyword
+            if impact_description_mode:
+                # Look for location keywords to exit impact mode
+                if any(loc in line_text for loc in ['Island', 'Islands', 'Province', 'City', 'Municipality', 'Barangay', 'Region']):
+                    impact_description_mode = False
+                    location_lines.append(line_text)
+                # Skip if this looks like impact text continuation
+                elif any(kw in line_lower for kw in ['prevailing', 'expected', 'within', 'hours', 'threat', 'property', 'danger', 'damage']):
+                    continue
+                else:
+                    # Might be location continuation, keep it
+                    location_lines.append(line_text)
+                continue
+            
+            # Normal case: add location line
+            location_lines.append(line_text)
+        
+        return location_lines
+    
     def _parse_format1_table(self, lines: list, header_idx: int, result: dict) -> dict:
         """Parse Format 1 (Henry-style) signal table"""
         i = header_idx + 1
@@ -411,33 +424,8 @@ class SignalWarningExtractor:
                     
                     i += 1
                 
-                # Filter out impact description lines
-                location_lines = []
-                impact_description_mode = False
-                
-                for line_text in raw_lines:
-                    line_lower = line_text.lower()
-                    
-                    if line_lower.startswith('(') and any(kw in line_lower for kw in ['strong winds', 'prevailing', 'expected']):
-                        impact_description_mode = True
-                        # Extract location from this line
-                        location_match = re.search(r'(?:portion of|area of|island of|islands of|province of|city of|municipality of|municipalities of|barangay of|barangays of|northern|southern|eastern|western)\s+(.+)', line_text, re.IGNORECASE)
-                        if location_match:
-                            match_text = line_text[location_match.start():]
-                            location_lines.append(match_text.strip())
-                        continue
-                    
-                    if impact_description_mode:
-                        if any(loc in line_text for loc in ['Island', 'Islands', 'Province', 'City', 'Municipality', 'Barangay', 'Region']):
-                            impact_description_mode = False
-                            location_lines.append(line_text)
-                        elif any(kw in line_lower for kw in ['prevailing', 'expected', 'within', 'hours', 'threat', 'property', 'danger', 'damage']):
-                            continue
-                        else:
-                            location_lines.append(line_text)
-                        continue
-                    
-                    location_lines.append(line_text)
+                # Filter out impact description lines using shared method
+                location_lines = self._filter_impact_descriptions_from_location_lines(raw_lines)
                 
                 # Join and parse locations
                 full_text = ' '.join(location_lines)

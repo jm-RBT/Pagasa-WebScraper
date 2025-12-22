@@ -83,41 +83,16 @@ def verify_core_dependencies() -> Dict[str, Tuple[bool, Optional[str]]]:
     return results
 
 
-def verify_ml_dependencies() -> Dict[str, Tuple[bool, Optional[str]]]:
+def verify_gui_dependencies() -> Dict[str, Tuple[bool, Optional[str]]]:
     """
-    Verify ML dependencies: torch, transformers, pillow, pypdfium2, timm.
+    Verify GUI dependencies: pillow, pypdfium2.
 
     Returns:
         Dictionary mapping package names to (success: bool, version: Optional[str])
     """
     results: Dict[str, Tuple[bool, Optional[str]]] = {}
     
-    logger.info("Verifying ML dependencies...")
-    
-    # torch
-    try:
-        import torch
-        version = torch.__version__
-        results["torch"] = (True, version)
-        logger.info(f"✓ torch version: {version}")
-        logger.info(f"  CUDA available: {torch.cuda.is_available()}")
-        if torch.cuda.is_available():
-            logger.info(f"  CUDA version: {torch.version.cuda}")
-    except ImportError as e:
-        results["torch"] = (False, None)
-        logger.error(f"✗ torch import failed: {e}")
-    
-    # transformers
-    try:
-        import transformers
-        from transformers import TableTransformerForObjectDetection
-        version = transformers.__version__
-        results["transformers"] = (True, version)
-        logger.info(f"✓ transformers version: {version}")
-        logger.info("  TableTransformerForObjectDetection imported successfully")
-    except ImportError as e:
-        results["transformers"] = (False, None)
-        logger.error(f"✗ transformers import failed: {e}")
+    logger.info("Verifying GUI dependencies...")
     
     # pillow (PIL)
     try:
@@ -146,14 +121,6 @@ def verify_ml_dependencies() -> Dict[str, Tuple[bool, Optional[str]]]:
         results["pypdfium2"] = (False, None)
         logger.error(f"✗ pypdfium2 import failed: {e}")
     
-    # timm
-    success, version, error = check_package_version("timm")
-    results["timm"] = (success, version)
-    if success:
-        logger.info(f"✓ timm version: {version}")
-    else:
-        logger.error(f"✗ timm import failed: {error}")
-    
     return results
 
 
@@ -161,7 +128,7 @@ def verify() -> None:
     """
     Main verification function that checks all dependencies.
 
-    Verifies both core and ML dependencies, logs results, and exits with
+    Verifies both core and GUI dependencies, logs results, and exits with
     appropriate status code (0 for success, 1 for failure).
     """
     logger.info("=" * 60)
@@ -176,9 +143,9 @@ def verify() -> None:
     
     logger.info("")
     
-    # Verify ML dependencies
-    ml_results = verify_ml_dependencies()
-    all_results.update(ml_results)
+    # Verify GUI dependencies
+    gui_results = verify_gui_dependencies()
+    all_results.update(gui_results)
     
     # Summary
     logger.info("")

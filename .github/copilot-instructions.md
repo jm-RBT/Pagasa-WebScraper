@@ -1,3 +1,7 @@
+---
+applyTo: '**/*.py'
+---
+
 # Copilot Instructions for Pagasa WebScraper
 
 ## Overview

@@ -1,5 +1,5 @@
 ---
-agent: agent
+agent: Python Programmer Agent
 ---
 The text below defines the typhoon wind signal warning rules used in the Philippines. Use this information to answer questions or generate algorithms about typhoon warnings, wind signals, and their implications.
 

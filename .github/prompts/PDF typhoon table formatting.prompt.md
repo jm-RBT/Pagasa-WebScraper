@@ -1,5 +1,5 @@
 ---
-agent: agent
+agent: Python Programmer Agent
 ---
 We need to improve the accuracy of text extraction from the PDFs
 

@@ -71,6 +71,15 @@ python scrape_bulletin.py "wayback_snapshot.html"
 - ✓ Handles wayback machine URLs automatically
 - ✓ Outputs both human-readable and JSON formats
 - ✓ Distinguishes between different typhoon tabs
+- ✓ **Robust HTML parsing with multiple fallback strategies**
+- ✓ **Works with different HTML formats and page structures**
+- ✓ **Automatically adapts to tab-based or simple layouts**
+
+**Parsing Strategies:**
+The scraper uses multiple strategies to ensure compatibility with different HTML formats:
+1. **Tab-based navigation** (newer format with multiple typhoons)
+2. **Direct archive section search** (older format or single typhoon)
+3. **Pattern matching** (fallback for scattered bulletin PDFs)
 
 **Output Format:**
 Returns a 2D array where each sub-array contains PDF links for one typhoon:

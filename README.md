@@ -34,7 +34,56 @@ python verify_install.py
 
 ## Scripts & Usage
 
-### 1. Analyze Single PDF: `analyze_pdf.py`
+### 1. Web Scraper: `scrape_bulletin.py`
+
+Extract PDF links from PAGASA Severe Weather Bulletin page (organized by typhoon).
+
+**Basic Usage:**
+```powershell
+# Use default HTML file (bin/PAGASA.html)
+python scrape_bulletin.py
+
+# Specific HTML file
+python scrape_bulletin.py "path/to/pagasa.html"
+
+# From URL (when live)
+python scrape_bulletin.py "https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin"
+```
+
+**Arguments:**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `<source>` | string | HTML file path or URL (optional, defaults to bin/PAGASA.html) |
+
+**Examples:**
+```powershell
+# Default usage (uses bin/PAGASA.html)
+python scrape_bulletin.py
+
+# Custom HTML file
+python scrape_bulletin.py "wayback_snapshot.html"
+```
+
+**Features:**
+- ✓ Extracts PDF links from bulletin archive sections
+- ✓ Supports multiple typhoons (returns 2D array)
+- ✓ Handles wayback machine URLs automatically
+- ✓ Outputs both human-readable and JSON formats
+- ✓ Distinguishes between different typhoon tabs
+
+**Output Format:**
+Returns a 2D array where each sub-array contains PDF links for one typhoon:
+```json
+[
+  ["typhoon1_bulletin1.pdf", "typhoon1_bulletin2.pdf"],
+  ["typhoon2_bulletin1.pdf", "typhoon2_bulletin2.pdf"]
+]
+```
+
+---
+
+### 2. Analyze Single PDF: `analyze_pdf.py`
 
 Analyze individual PAGASA PDF bulletins with accurate data extraction.
 
@@ -90,7 +139,7 @@ python analyze_pdf.py --random --low-cpu --metrics
 
 ---
 
-### 2. Batch Process All PDFs: `typhoon_extraction_ml.py`
+### 3. Batch Process All PDFs: `typhoon_extraction_ml.py`
 
 Extract data from all PDFs in the dataset directory.
 
@@ -125,7 +174,7 @@ python typhoon_extraction_ml.py "dataset/pdfs" --output "results.json"
 
 ---
 
-### 3. Test Extraction Accuracy: `test_accuracy.py`
+### 4. Test Extraction Accuracy: `test_accuracy.py`
 
 Validate extraction accuracy by comparing against ground truth annotations.
 
@@ -170,7 +219,7 @@ python test_accuracy.py --detailed --metrics
 
 ---
 
-### 4. PDF Annotation GUI: `pdf_annotation_gui.py`
+### 5. PDF Annotation GUI: `pdf_annotation_gui.py`
 
 Interactive GUI for manually annotating PDFs with extracted JSON data.
 
@@ -205,8 +254,10 @@ dataset/
 
 bin/
 ├── consolidated_locations.csv       # 43,761 location mappings
-└── extracted_typhoon_data.json      # Batch extraction output
+├── extracted_typhoon_data.json      # Batch extraction output
+└── PAGASA.html                      # Sample HTML from wayback machine
 
+scrape_bulletin.py                   # Web scraper for bulletin page
 typhoon_extraction_ml.py             # Main extraction engine
 analyze_pdf.py                       # Single PDF analysis tool
 test_accuracy.py                     # Accuracy validation
@@ -238,6 +289,7 @@ The extraction engine handles:
 ## Dependencies
 
 All dependencies are listed in `requirements.txt`:
+- `beautifulsoup4` - HTML parsing for web scraper
 - `pdfplumber` - PDF text extraction
 - `pandas` - Data manipulation
 - `psutil` - System resource monitoring

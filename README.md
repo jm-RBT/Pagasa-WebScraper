@@ -92,7 +92,135 @@ Returns a 2D array where each sub-array contains PDF links for one typhoon:
 
 ---
 
-### 2. Analyze Single PDF: `analyze_pdf.py`
+### 2. Main Pipeline: `main.py` ⭐ **NEW**
+
+**Combines web scraping and PDF analysis in a single automated workflow.**
+
+This script integrates the web scraper with PDF analysis to:
+1. Extract typhoon names and PDF links from PAGASA bulletin page
+2. Automatically select the latest bulletin for each typhoon
+3. Analyze the latest PDF and output results as JSON
+
+**By default, outputs raw JSON to stdout** (ideal for piping, automation, and scripting).
+Use `--verbose` flag to see progress messages (sent to stderr).
+
+**Basic Usage:**
+```bash
+# Use default HTML file (bin/PAGASA.html) - outputs JSON
+python main.py
+
+# Specific HTML file - outputs JSON
+python main.py "path/to/pagasa.html"
+
+# Show progress messages while outputting JSON
+python main.py --verbose
+
+# Save JSON to file
+python main.py > output.json
+
+# Parse with jq
+python main.py | jq '.data.typhoon_windspeed'
+```
+
+**Arguments:**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `<source>` | string | HTML file path or URL (optional, defaults to bin/PAGASA.html) |
+| `--verbose` | flag | Show progress messages (sent to stderr, not stdout) |
+| `--metrics` | flag | Show CPU, memory, and execution time metrics (to stderr) |
+| `--low-cpu` | flag | Limit CPU usage to ~30% during PDF processing |
+| `--help` | flag | Show help message |
+
+**Examples:**
+```bash
+# Pure JSON output (no noise)
+python main.py
+
+# JSON with progress tracking
+python main.py --verbose
+
+# Save JSON to file (silent)
+python main.py > typhoon_data.json
+
+# JSON only, suppress any stderr messages
+python main.py 2>/dev/null
+
+# Verbose with metrics
+python main.py --verbose --metrics
+
+# Parse specific field with jq
+python main.py | jq '.data.typhoon_location_text'
+
+# Use in scripts
+WIND_SPEED=$(python main.py | jq -r '.data.typhoon_windspeed')
+echo "Current wind speed: $WIND_SPEED"
+```
+
+**Features:**
+- ✓ **Raw JSON output by default** - no noise, easy to parse
+- ✓ **Automatic typhoon name detection** from HTML tabs
+- ✓ **Latest bulletin selection** (most recent PDF)
+- ✓ **Integrated PDF analysis** with signal and rainfall warnings
+- ✓ **Remote PDF download** (with automatic cleanup)
+- ✓ **Optional progress tracking** with --verbose flag
+- ✓ **Pipe-friendly design** (JSON to stdout, logs to stderr)
+
+**Workflow:**
+```
+1. Scrape PAGASA bulletin page → Extract typhoon names & PDF links
+2. Select latest bulletin → Get most recent PDF URL
+3. Analyze PDF → Download (if URL), extract data, cleanup automatically
+4. Output JSON → Pure data to stdout
+```
+
+**JSON Output Format:**
+```json
+{
+  "typhoon_name": "Typhoon \"Henry\"",
+  "pdf_url": "https://pubfiles.pagasa.dost.gov.ph/.../TCB#10_henry.pdf",
+  "data": {
+    "updated_datetime": "2024-09-04 05:00:00",
+    "typhoon_location_text": "18.5°N, 126.3°E",
+    "typhoon_windspeed": "150 km/h",
+    "typhoon_movement": "West Northwest at 20 km/h",
+    "signal_warning_tags1": {...},
+    "signal_warning_tags2": {...},
+    "rainfall_warning_tags1": {...},
+    ...
+  }
+}
+```
+
+**Verbose Output (--verbose flag):**
+```
+[STEP 1] Scraping PAGASA bulletin page...
+Found 1 typhoon(s):
+  - Typhoon "Henry": 10 bulletin(s)
+
+[STEP 2] Selecting latest bulletin...
+  Typhoon: Typhoon "Henry"
+  Latest bulletin: https://pubfiles.pagasa.dost.gov.ph/.../TCB#10_henry.pdf
+
+[STEP 3] Analyzing PDF...
+  Downloading PDF from: https://...
+  Saved to temporary file: /tmp/...
+  Cleaned up temporary file: /tmp/...
+
+(JSON output to stdout)
+
+[SUCCESS] Analysis completed in 12.34s
+```
+
+**Use Cases:**
+- **Monitoring latest typhoon updates**: Quickly get current bulletin analysis
+- **Automated alerts**: Integrate with notification systems
+- **Data collection**: Export JSON for storage or further processing
+- **Research**: Track typhoon progression over time
+
+---
+
+### 3. Analyze Single PDF: `analyze_pdf.py`
 
 Analyze individual PAGASA PDF bulletins with accurate data extraction.
 
@@ -148,7 +276,7 @@ python analyze_pdf.py --random --low-cpu --metrics
 
 ---
 
-### 3. Batch Process All PDFs: `typhoon_extraction_ml.py`
+### 4. Batch Process All PDFs: `typhoon_extraction_ml.py`
 
 Extract data from all PDFs in the dataset directory.
 
@@ -183,7 +311,7 @@ python typhoon_extraction_ml.py "dataset/pdfs" --output "results.json"
 
 ---
 
-### 4. Test Extraction Accuracy: `test_accuracy.py`
+### 5. Test Extraction Accuracy: `test_accuracy.py`
 
 Validate extraction accuracy by comparing against ground truth annotations.
 
@@ -228,7 +356,7 @@ python test_accuracy.py --detailed --metrics
 
 ---
 
-### 5. PDF Annotation GUI: `pdf_annotation_gui.py`
+### 6. PDF Annotation GUI: `pdf_annotation_gui.py`
 
 Interactive GUI for manually annotating PDFs with extracted JSON data.
 

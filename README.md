@@ -373,7 +373,22 @@ python pdf_annotation_gui.py
 - Navigation: Previous, Next, Save & Next buttons
 - Saves annotations to `dataset/pdfs_annotation/`
 
-See [GUI_DOCUMENTATION.md](GUI_DOCUMENTATION.md) for detailed GUI features and architecture.
+See [docs/PDF_ANNOTATION_GUI_README.md](docs/PDF_ANNOTATION_GUI_README.md) for detailed user guide and features.
+See [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md) for complete visual reference with diagrams.
+
+---
+
+## Documentation
+
+The project includes comprehensive documentation:
+
+| Document | Purpose |
+|----------|---------|
+| [docs/PDF_ANNOTATION_GUI_README.md](docs/PDF_ANNOTATION_GUI_README.md) | User guide for the PDF annotation GUI tool |
+| [docs/PDF_ANNOTATION_IMPLEMENTATION.md](docs/PDF_ANNOTATION_IMPLEMENTATION.md) | Technical architecture and code metrics for developers |
+| [docs/PDF_ANNOTATION_QUICKREF.md](docs/PDF_ANNOTATION_QUICKREF.md) | Quick reference cheat sheet for GUI controls |
+| [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md) | Comprehensive visual reference with UI diagrams, colors, layouts, and workflows |
+| [docs/PDF_STRUCTURE_ANALYSIS.md](docs/PDF_STRUCTURE_ANALYSIS.md) | Technical analysis of PDF bulletin structure |
 
 ---
 
@@ -454,5 +469,7 @@ All dependencies are listed in `requirements.txt`:
 
 ## Development
 
-For implementation details, see:
-- [GUI_DOCUMENTATION.md](GUI_DOCUMENTATION.md) - GUI architecture and features
+Comprehensive documentation is available in the `docs/` folder:
+- **[GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md)** - Complete visual reference with interface layouts, color schemes, button specifications, state machines, and workflows
+- **[PDF_ANNOTATION_IMPLEMENTATION.md](docs/PDF_ANNOTATION_IMPLEMENTATION.md)** - Technical implementation details, code architecture, and metrics
+- **[PDF_STRUCTURE_ANALYSIS.md](docs/PDF_STRUCTURE_ANALYSIS.md)** - Detailed analysis of PAGASA bulletin PDF structure

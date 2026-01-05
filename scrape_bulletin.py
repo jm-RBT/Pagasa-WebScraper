@@ -54,7 +54,7 @@ def extract_pdfs_from_container(container):
     links = container.find_all('a', href=True)
     for link in links:
         href = link.get('href', '')
-        href = clean_pdf_url(href)
+        # href = clean_pdf_url(href)
         
         # Only include PDF links
         if href.endswith('.pdf') or '.pdf' in href:
@@ -164,7 +164,7 @@ def scrape_without_tabs(soup):
         all_links = soup.find_all('a', href=True)
         for link in all_links:
             href = link.get('href', '')
-            href = clean_pdf_url(href)
+            # href = clean_pdf_url(href)
             
             # Check if it's a bulletin PDF
             if ('.pdf' in href.lower()) and ('bulletin' in href.lower() or 'tcb' in href.lower() or 'tca' in href.lower()):

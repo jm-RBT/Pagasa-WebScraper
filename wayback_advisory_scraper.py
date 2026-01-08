@@ -122,7 +122,7 @@ def get_all_snapshots(url, limit=None, year=None):
             snapshot_data = dict(zip(headers, row))
             timestamp = snapshot_data.get('timestamp')
             if timestamp:
-                snapshot_url = f"http://web.archive.org/web/{timestamp}/{url}"
+                snapshot_url = f"https://web.archive.org/web/{timestamp}/{url}"
                 snapshots.append({
                     'url': snapshot_url,
                     'timestamp': timestamp,
@@ -214,15 +214,11 @@ def extract_pdfs_from_advisory_elements(html_content, base_url):
         for link in links:
             href = link.get('href', '')
             
-            # Remove Wayback Machine wrapper if present
-            if 'web.archive.org' in href and ('/http://' in href or '/https://' in href):
-                # Split on /http:// or /https://
-                for protocol in ['/https://', '/http://']:
-                    if protocol in href:
-                        parts = href.split(protocol)
-                        if len(parts) > 1:
-                            href = protocol[1:] + parts[-1]  # Remove leading slash
-                        break
+            # Remove Wayback Machine wrapper if present (matches pattern in scrape_bulletin.py)
+            if 'web.archive.org' in href:
+                parts = href.split('/http')
+                if len(parts) > 1:
+                    href = 'http' + parts[-1]
             
             # Check if it's a PDF link
             if href.endswith('.pdf') or '.pdf' in href.lower():

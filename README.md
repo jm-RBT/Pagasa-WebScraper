@@ -34,7 +34,64 @@ python verify_install.py
 
 ## Scripts & Usage
 
-### 1. Web Scraper: `scrape_bulletin.py`
+### 1. Wayback Machine Advisory Scraper: `wayback_advisory_scraper.py` ⭐ **NEW**
+
+Scrape weather advisory PDFs from archived PAGASA pages using the Wayback Machine API.
+
+**Basic Usage:**
+```bash
+# Get PDFs from latest snapshot
+python wayback_advisory_scraper.py
+
+# Get PDFs from all available snapshots
+python wayback_advisory_scraper.py --all
+
+# Get PDFs from latest 10 snapshots
+python wayback_advisory_scraper.py --all --limit 10
+
+# Get PDFs from all 2024 snapshots
+python wayback_advisory_scraper.py --all --year 2024
+```
+
+**Arguments:**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--all` | flag | Process all available snapshots (not just latest) |
+| `--limit` | integer | Maximum number of snapshots to process |
+| `--year` | integer | Filter snapshots by year (e.g., 2024) |
+
+**Features:**
+- ✓ Uses Wayback Machine public API to find archived snapshots
+- ✓ Headless HTML parsing with BeautifulSoup
+- ✓ Targets elements with class "col-md-12 article-content weather-advisory"
+- ✓ Automatically extracts and downloads PDFs
+- ✓ Saves PDFs to `dataset/pdfs_advisory/` with timestamp prefixes
+- ✓ Handles Wayback Machine URL unwrapping
+- ✓ Comprehensive error handling and progress logging
+- ✓ Avoids duplicate downloads
+- ✓ Rate limiting to be respectful to servers
+
+**Target URL:**
+```
+https://www.pagasa.dost.gov.ph/weather/weather-advisory
+```
+
+**Output Location:**
+```
+dataset/pdfs_advisory/
+```
+
+**How It Works:**
+1. Queries Wayback Machine API for snapshots of the target URL
+2. Fetches HTML content from archived snapshots
+3. Parses HTML to find weather advisory elements
+4. Extracts PDF links from those elements
+5. Downloads PDFs with timestamp prefixes for easy tracking
+
+---
+
+### 2. Web Scraper: `scrape_bulletin.py`
 
 Extract PDF links from PAGASA Severe Weather Bulletin page (organized by typhoon).
 
@@ -92,7 +149,7 @@ Returns a 2D array where each sub-array contains PDF links for one typhoon:
 
 ---
 
-### 2. Main Pipeline: `main.py` ⭐ **NEW**
+### 3. Main Pipeline: `main.py` ⭐
 
 **Combines web scraping and PDF analysis in a single automated workflow.**
 
@@ -220,7 +277,7 @@ Found 1 typhoon(s):
 
 ---
 
-### 3. Analyze Single PDF: `analyze_pdf.py`
+### 4. Analyze Single PDF: `analyze_pdf.py`
 
 Analyze individual PAGASA PDF bulletins with accurate data extraction.
 
@@ -276,7 +333,7 @@ python analyze_pdf.py --random --low-cpu --metrics
 
 ---
 
-### 4. Batch Process All PDFs: `typhoon_extraction.py`
+### 5. Batch Process All PDFs: `typhoon_extraction.py`
 
 Extract data from all PDFs in the dataset directory.
 
@@ -311,7 +368,7 @@ python typhoon_extraction.py "dataset/pdfs" --output "results.json"
 
 ---
 
-### 5. Test Extraction Accuracy: `test_accuracy.py`
+### 6. Test Extraction Accuracy: `test_accuracy.py`
 
 Validate extraction accuracy by comparing against ground truth annotations.
 
@@ -356,7 +413,7 @@ python test_accuracy.py --detailed --metrics
 
 ---
 
-### 6. PDF Annotation GUI: `pdf_annotation_gui.py`
+### 7. PDF Annotation GUI: `pdf_annotation_gui.py`
 
 Interactive GUI for manually annotating PDFs with extracted JSON data.
 
@@ -399,6 +456,8 @@ dataset/
 ├── pdfs/                    # Source PDF bulletins
 │   └── pagasa-YY-TC##/
 │       └── PAGASA_YY-TC##_Name_TCTYPE#NUM.pdf
+├── pdfs_advisory/           # Weather advisory PDFs from Wayback Machine
+│   └── YYYYMMDDHHMMSS_advisory_name.pdf
 ├── pdfs_annotation/         # Ground truth annotations
 │   └── pagasa-YY-TC##/
 │       └── PAGASA_YY-TC##_Name_TCTYPE#NUM.json
@@ -409,6 +468,7 @@ bin/
 ├── extracted_typhoon_data.json      # Batch extraction output
 └── PAGASA.html                      # Sample HTML from wayback machine
 
+wayback_advisory_scraper.py          # Wayback Machine advisory scraper
 scrape_bulletin.py                   # Web scraper for bulletin page
 typhoon_extraction.py                # Main extraction engine
 analyze_pdf.py                       # Single PDF analysis tool

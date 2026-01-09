@@ -171,7 +171,7 @@ class RainfallAdvisoryExtractor:
                 for table in tables:
                     if table and len(table) > 0:
                         # Check if this is a rainfall forecast table
-                        first_row = str(table[0]).lower()
+                        first_row = ' '.join(str(cell or '') for cell in table[0]).lower()
                         if 'rainfall' in first_row or 'forecast' in first_row:
                             return table
                 
@@ -204,7 +204,7 @@ class RainfallAdvisoryExtractor:
         
         # Parse table rows
         for row in table:
-            if not row or len(row) < 3:
+            if not row or len(row) < 2:  # Need at least rainfall amount and one location column
                 continue
             
             # Get rainfall range from first column
@@ -214,9 +214,9 @@ class RainfallAdvisoryExtractor:
             warning_level = None
             if '>200' in rainfall_col or '> 200' in rainfall_col:
                 warning_level = 'red'
-            elif '100' in rainfall_col and '200' in rainfall_col:
+            elif re.search(r'100\s*[-–]\s*200', rainfall_col):
                 warning_level = 'orange'
-            elif '50' in rainfall_col and '100' in rainfall_col:
+            elif re.search(r'50\s*[-–]\s*100', rainfall_col):
                 warning_level = 'yellow'
             
             if not warning_level:

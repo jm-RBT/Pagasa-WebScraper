@@ -46,11 +46,11 @@ python advisory_scraper.py
 # Test with random PDF from dataset
 python advisory_scraper.py --random
 
-# Test with specific PDF
-python advisory_scraper.py --path "dataset/pdfs_advisory/file.pdf"
+# Test with specific PDF (auto-detects file path)
+python advisory_scraper.py "dataset/pdfs_advisory/file.pdf"
 
-# Extract from PDF URL
-python advisory_scraper.py --url "https://example.com/advisory.pdf"
+# Extract from PDF URL (auto-detects URL)
+python advisory_scraper.py "https://example.com/advisory.pdf"
 
 # JSON-only output
 python advisory_scraper.py --json --random
@@ -61,6 +61,7 @@ python advisory_scraper.py --json --random
 - ✓ **3 warning levels** - Red (>200mm), Orange (100-200mm), Yellow (50-100mm)
 - ✓ **Island group categorization** - Luzon, Visayas, Mindanao, Other
 - ✓ **Location matching** - Uses consolidated locations database
+- ✓ **Auto-detection** - Automatically detects if input is URL or file path
 - ✓ **Multiple input modes** - Live URL, random, file path, or URL
 - ✓ **JSON output** - Structured data ready for processing
 - ✓ Fetches live page from PAGASA website
@@ -70,8 +71,7 @@ python advisory_scraper.py --json --random
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `--url` | string | PDF URL to download and extract |
-| `--path` | string | Local PDF file path to extract |
+| `source` | string | PDF file path or URL (auto-detected, optional) |
 | `--random` | flag | Extract from random PDF in dataset |
 | `--json` | flag | Output only JSON (no progress messages) |
 

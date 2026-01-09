@@ -435,13 +435,12 @@ def main():
 Examples:
   python advisory_scraper.py                          # Scrape from live URL
   python advisory_scraper.py --random                 # Test random PDF from dataset
-  python advisory_scraper.py --path "file.pdf"        # Test specific PDF
-  python advisory_scraper.py --url "http://..."       # Extract from URL
+  python advisory_scraper.py "file.pdf"               # Test specific PDF (auto-detected)
+  python advisory_scraper.py "http://..."             # Extract from URL (auto-detected)
         """
     )
     
-    parser.add_argument('--url', type=str, help='PDF URL to download and extract')
-    parser.add_argument('--path', type=str, help='Local PDF file path to extract')
+    parser.add_argument('source', nargs='?', help='PDF file path or URL (auto-detected)')
     parser.add_argument('--random', action='store_true', help='Extract from random PDF in dataset')
     parser.add_argument('--json', action='store_true', help='Output only JSON (no progress messages)')
     
@@ -450,15 +449,17 @@ Examples:
     result = None
     
     try:
-        if args.path:
-            # Extract from specific file
-            result = extract_from_pdf(args.path)
-        elif args.url:
-            # Extract from URL
-            result = extract_from_url(args.url)
-        elif args.random:
+        if args.random:
             # Extract from random dataset PDF
             result = extract_random_from_dataset()
+        elif args.source:
+            # Auto-detect if source is URL or file path
+            if args.source.startswith('http://') or args.source.startswith('https://'):
+                # It's a URL
+                result = extract_from_url(args.source)
+            else:
+                # It's a file path
+                result = extract_from_pdf(args.source)
         else:
             # Default: scrape from live URL
             result = scrape_and_extract()

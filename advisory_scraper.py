@@ -51,9 +51,12 @@ class RainfallAdvisoryExtractor:
         if not text or text.strip() == '-' or text.strip() == '':
             return []
         
-        # Directional modifiers that should be combined with following word
-        directional_modifiers = ['Northern', 'Southern', 'Eastern', 'Western', 'Central', 
-                                 'North', 'South', 'East', 'West', 'Greater']
+        # Directional prefixes that should be combined with following word (e.g., "Northern Samar")
+        directional_prefixes = ['Northern', 'Southern', 'Eastern', 'Western', 'Central', 
+                                'North', 'South', 'East', 'West', 'Greater']
+        
+        # Directional suffixes that should be combined with previous word (e.g., "Negros Occidental")
+        directional_suffixes = ['Occidental', 'Oriental']
         
         # Replace newlines with spaces first to keep multi-word locations together
         # Then split by commas only
@@ -75,8 +78,8 @@ class RainfallAdvisoryExtractor:
                 i += 1
                 continue
             
-            # Check if this is a directional modifier that should be combined with next part
-            if part in directional_modifiers and i + 1 < len(parts):
+            # Check if this is a directional prefix that should be combined with next part
+            if part in directional_prefixes and i + 1 < len(parts):
                 next_part = parts[i + 1].strip()
                 # Skip "and" in between if present
                 if next_part.lower() == 'and' and i + 2 < len(parts):
@@ -93,6 +96,16 @@ class RainfallAdvisoryExtractor:
                     # Standalone directional, keep as is (unusual but possible)
                     locations.append(part)
                     i += 1
+                    continue
+            
+            # Check if next part is a directional suffix that should be combined with current part
+            if i + 1 < len(parts):
+                next_part = parts[i + 1].strip()
+                if next_part in directional_suffixes:
+                    # Combine current location with directional suffix
+                    combined = f"{part} {next_part}"
+                    locations.append(combined)
+                    i += 2  # Skip both parts
                     continue
             
             # Handle parts that start with "and" (e.g., "and Guimaras")

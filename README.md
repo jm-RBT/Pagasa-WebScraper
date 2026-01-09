@@ -52,12 +52,17 @@ python advisory_scraper.py "dataset/pdfs_advisory/file.pdf"
 # Extract from PDF URL (auto-detects URL)
 python advisory_scraper.py "https://example.com/advisory.pdf"
 
+# Use OCR for image-based PDFs
+python advisory_scraper.py --ocr "scanned-document.pdf"
+
 # JSON-only output
 python advisory_scraper.py --json --random
 ```
 
 **Features:**
 - ✓ **PDF extraction using pdfplumber** - Parses rainfall forecast tables
+- ✓ **OCR support (optional)** - Handles image-based/scanned PDFs with pytesseract
+- ✓ **Auto OCR detection** - Automatically tries OCR when PDF has no text layer
 - ✓ **3 warning levels** - Red (>200mm), Orange (100-200mm), Yellow (50-100mm)
 - ✓ **Island group categorization** - Luzon, Visayas, Mindanao, Other
 - ✓ **Location matching** - Uses consolidated locations database
@@ -73,7 +78,19 @@ python advisory_scraper.py --json --random
 |----------|------|-------------|
 | `source` | string | PDF file path or URL (auto-detected, optional) |
 | `--random` | flag | Extract from random PDF in dataset |
+| `--ocr` | flag | Use OCR for image-based PDFs (requires pytesseract & pdf2image) |
 | `--json` | flag | Output only JSON (no progress messages) |
+
+**OCR Setup (Optional):**
+```bash
+# Install Python OCR libraries
+pip install pytesseract pdf2image
+
+# Install Tesseract OCR engine (system package)
+# Ubuntu/Debian: sudo apt-get install tesseract-ocr
+# macOS: brew install tesseract
+# Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
+```
 
 **Output Format:**
 ```json

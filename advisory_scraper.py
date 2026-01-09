@@ -4,12 +4,14 @@ PAGASA Weather Advisory PDF Extractor
 
 Extracts rainfall warning data from PAGASA weather advisory PDFs.
 Parses tables to extract locations affected by different rainfall warning levels.
+Includes OCR support for image-based PDFs.
 
 Usage:
     python advisory_scraper.py                    # Scrape from live URL
     python advisory_scraper.py --random           # Test random PDF from dataset
     python advisory_scraper.py --path "file.pdf"  # Test specific PDF
     python advisory_scraper.py --url "http://..." # Extract from URL
+    python advisory_scraper.py --ocr "file.pdf"   # Force OCR for image-based PDF
     
 Output: JSON with rainfall warnings categorized by island groups
 """
@@ -29,6 +31,15 @@ from typing import Dict, List, Optional, Tuple
 import pdfplumber
 import pandas as pd
 import time
+
+# Optional OCR imports
+try:
+    from pdf2image import convert_from_path
+    import pytesseract
+    from PIL import Image
+    OCR_AVAILABLE = True
+except ImportError:
+    OCR_AVAILABLE = False
 
 
 # Configuration
@@ -154,15 +165,28 @@ class RainfallAdvisoryExtractor:
         
         return island_groups
     
-    def extract_rainfall_tables(self, pdf_path: str) -> List[List[List]]:
+    def extract_rainfall_tables(self, pdf_path: str, use_ocr: bool = False) -> List[List[List]]:
         """Extract all rainfall forecast tables from PDF"""
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 if len(pdf.pages) == 0:
                     return []
                 
+                # Check if PDF has extractable text
+                page = pdf.pages[0]
+                has_text = len(page.chars) > 0
+                
+                # If no text and OCR is available, try OCR
+                if not has_text and OCR_AVAILABLE:
+                    print("[INFO] PDF is image-based, attempting OCR extraction...")
+                    return self.extract_tables_with_ocr(pdf_path)
+                elif not has_text and not OCR_AVAILABLE:
+                    print("[WARNING] PDF is image-based but OCR is not available")
+                    print("[INFO] Install OCR support: pip install pytesseract pdf2image")
+                    return []
+                
                 # Extract tables from first page
-                tables = pdf.pages[0].extract_tables()
+                tables = page.extract_tables()
                 
                 if not tables:
                     return []
@@ -186,7 +210,62 @@ class RainfallAdvisoryExtractor:
             print(f"[ERROR] Failed to extract tables from PDF: {e}")
             return []
     
-    def extract_rainfall_warnings(self, pdf_path: str) -> Dict:
+    def extract_tables_with_ocr(self, pdf_path: str) -> List[List[List]]:
+        """Extract tables using OCR for image-based PDFs"""
+        if not OCR_AVAILABLE:
+            print("[ERROR] OCR libraries not available")
+            return []
+        
+        try:
+            # Convert PDF to images
+            print("[OCR] Converting PDF to images...")
+            images = convert_from_path(pdf_path, dpi=300, first_page=1, last_page=1)
+            
+            if not images:
+                return []
+            
+            # Extract text from first page using OCR
+            print("[OCR] Extracting text from image...")
+            text = pytesseract.image_to_string(images[0], lang='eng')
+            
+            if not text.strip():
+                print("[WARNING] OCR extracted no text")
+                return []
+            
+            # Parse the OCR text into a table structure
+            print("[OCR] Parsing extracted text...")
+            table = self.parse_ocr_text_to_table(text)
+            
+            if table:
+                return [table]
+            
+            return []
+            
+        except Exception as e:
+            print(f"[ERROR] OCR extraction failed: {e}")
+            return []
+    
+    def parse_ocr_text_to_table(self, text: str) -> Optional[List[List]]:
+        """Parse OCR text into table structure"""
+        lines = text.split('\n')
+        table = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            # Look for rainfall amount patterns
+            if any(pattern in line.lower() for pattern in ['>200', '> 200', '100', '200', '50', 'mm', 'rainfall', 'forecast']):
+                # Try to parse as a table row
+                # Split by multiple spaces or tabs
+                parts = re.split(r'\s{2,}|\t+', line)
+                if len(parts) >= 2:
+                    table.append(parts)
+        
+        return table if table else None
+    
+    def extract_rainfall_warnings(self, pdf_path: str, use_ocr: bool = False) -> Dict:
         """
         Extract rainfall warnings from PDF
         
@@ -198,7 +277,7 @@ class RainfallAdvisoryExtractor:
                 'yellow': {...}
             }
         """
-        tables = self.extract_rainfall_tables(pdf_path)
+        tables = self.extract_rainfall_tables(pdf_path, use_ocr=use_ocr)
         
         if not tables:
             print("[WARNING] No rainfall tables found in PDF")
@@ -357,14 +436,14 @@ def download_pdf(pdf_url, output_dir):
         return None
 
 
-def extract_from_pdf(pdf_path: str) -> Dict:
+def extract_from_pdf(pdf_path: str, use_ocr: bool = False) -> Dict:
     """Extract rainfall warnings from a single PDF"""
     print(f"\n{'='*70}")
     print(f"Extracting from: {Path(pdf_path).name}")
     print('='*70)
     
     extractor = RainfallAdvisoryExtractor()
-    warnings = extractor.extract_rainfall_warnings(pdf_path)
+    warnings = extractor.extract_rainfall_warnings(pdf_path, use_ocr=use_ocr)
     formatted = extractor.format_for_output(warnings)
     
     result = {
@@ -447,14 +526,23 @@ Examples:
   python advisory_scraper.py --random                 # Test random PDF from dataset
   python advisory_scraper.py "file.pdf"               # Test specific PDF (auto-detected)
   python advisory_scraper.py "http://..."             # Extract from URL (auto-detected)
+  python advisory_scraper.py --ocr "file.pdf"         # Use OCR for image-based PDF
         """
     )
     
     parser.add_argument('source', nargs='?', help='PDF file path or URL (auto-detected)')
     parser.add_argument('--random', action='store_true', help='Extract from random PDF in dataset')
+    parser.add_argument('--ocr', action='store_true', help='Use OCR for image-based PDFs (requires pytesseract and pdf2image)')
     parser.add_argument('--json', action='store_true', help='Output only JSON (no progress messages)')
     
     args = parser.parse_args()
+    
+    # Check OCR availability if requested
+    if args.ocr and not OCR_AVAILABLE:
+        print("[ERROR] OCR requested but libraries not available")
+        print("[INFO] Install with: pip install pytesseract pdf2image")
+        print("[INFO] Also install tesseract-ocr system package")
+        return 1
     
     result = None
     
@@ -469,7 +557,7 @@ Examples:
                 result = extract_from_url(args.source)
             else:
                 # It's a file path
-                result = extract_from_pdf(args.source)
+                result = extract_from_pdf(args.source, use_ocr=args.ocr)
         else:
             # Default: scrape from live URL
             result = scrape_and_extract()

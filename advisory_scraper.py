@@ -154,33 +154,37 @@ class RainfallAdvisoryExtractor:
         
         return island_groups
     
-    def extract_rainfall_table(self, pdf_path: str) -> Optional[List[List]]:
-        """Extract rainfall forecast table from PDF"""
+    def extract_rainfall_tables(self, pdf_path: str) -> List[List[List]]:
+        """Extract all rainfall forecast tables from PDF"""
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 if len(pdf.pages) == 0:
-                    return None
+                    return []
                 
                 # Extract tables from first page
                 tables = pdf.pages[0].extract_tables()
                 
                 if not tables:
-                    return None
+                    return []
                 
-                # Find the rainfall forecast table
+                # Find all rainfall forecast tables
+                rainfall_tables = []
                 for table in tables:
                     if table and len(table) > 0:
                         # Check if this is a rainfall forecast table
                         first_row = ' '.join(str(cell or '') for cell in table[0]).lower()
                         if 'rainfall' in first_row or 'forecast' in first_row:
-                            return table
+                            rainfall_tables.append(table)
                 
-                # If no specific table found, return first table
-                return tables[0] if tables else None
+                # If no specific table found but we have tables, return all of them
+                if not rainfall_tables and tables:
+                    rainfall_tables = tables
+                
+                return rainfall_tables
                 
         except Exception as e:
-            print(f"[ERROR] Failed to extract table from PDF: {e}")
-            return None
+            print(f"[ERROR] Failed to extract tables from PDF: {e}")
+            return []
     
     def extract_rainfall_warnings(self, pdf_path: str) -> Dict:
         """
@@ -194,50 +198,56 @@ class RainfallAdvisoryExtractor:
                 'yellow': {...}
             }
         """
-        table = self.extract_rainfall_table(pdf_path)
+        tables = self.extract_rainfall_tables(pdf_path)
         
-        if not table:
-            print("[WARNING] No rainfall table found in PDF")
+        if not tables:
+            print("[WARNING] No rainfall tables found in PDF")
             return self._empty_warnings()
+        
+        print(f"[INFO] Processing {len(tables)} table(s)")
         
         warnings = self._empty_warnings()
         
-        # Parse table rows
-        for row in table:
-            if not row or len(row) < 2:  # Need at least rainfall amount and one location column
-                continue
+        # Process each table
+        for table_idx, table in enumerate(tables):
+            print(f"[INFO] Processing table {table_idx + 1}/{len(tables)}")
             
-            # Get rainfall range from first column
-            rainfall_col = str(row[0]).lower() if row[0] else ''
-            
-            # Determine warning level based on rainfall amount
-            warning_level = None
-            if '>200' in rainfall_col or '> 200' in rainfall_col:
-                warning_level = 'red'
-            elif re.search(r'100\s*[-–]\s*200', rainfall_col):
-                warning_level = 'orange'
-            elif re.search(r'50\s*[-–]\s*100', rainfall_col):
-                warning_level = 'yellow'
-            
-            if not warning_level:
-                continue
-            
-            # Extract locations from "Today" column (2nd column, index 1)
-            # and "Tomorrow" column (3rd column, index 2)
-            today_locs = self.parse_locations_text(row[1] if len(row) > 1 else '')
-            tomorrow_locs = self.parse_locations_text(row[2] if len(row) > 2 else '')
-            
-            # Combine locations from both columns
-            all_locations = list(set(today_locs + tomorrow_locs))
-            
-            if all_locations:
-                # Categorize by island groups
-                categorized = self.categorize_locations_by_island(all_locations)
+            # Parse table rows
+            for row in table:
+                if not row or len(row) < 2:  # Need at least rainfall amount and one location column
+                    continue
                 
-                # Merge with existing warnings
-                for island, locs in categorized.items():
-                    if locs:
-                        warnings[warning_level][island].extend(locs)
+                # Get rainfall range from first column
+                rainfall_col = str(row[0]).lower() if row[0] else ''
+                
+                # Determine warning level based on rainfall amount
+                warning_level = None
+                if '>200' in rainfall_col or '> 200' in rainfall_col:
+                    warning_level = 'red'
+                elif re.search(r'100\s*[-–]\s*200', rainfall_col):
+                    warning_level = 'orange'
+                elif re.search(r'50\s*[-–]\s*100', rainfall_col):
+                    warning_level = 'yellow'
+                
+                if not warning_level:
+                    continue
+                
+                # Extract locations from "Today" column (2nd column, index 1)
+                # and "Tomorrow" column (3rd column, index 2)
+                today_locs = self.parse_locations_text(row[1] if len(row) > 1 else '')
+                tomorrow_locs = self.parse_locations_text(row[2] if len(row) > 2 else '')
+                
+                # Combine locations from both columns
+                all_locations = list(set(today_locs + tomorrow_locs))
+                
+                if all_locations:
+                    # Categorize by island groups
+                    categorized = self.categorize_locations_by_island(all_locations)
+                    
+                    # Merge with existing warnings
+                    for island, locs in categorized.items():
+                        if locs:
+                            warnings[warning_level][island].extend(locs)
         
         # Remove duplicates and sort
         for level in warnings:

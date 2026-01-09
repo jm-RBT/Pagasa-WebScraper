@@ -2,29 +2,64 @@
 """
 Example usage of advisory_scraper.
 
-This demonstrates how the advisory scraper works.
+This demonstrates how the advisory extractor works.
 """
 
 def main():
     """Display example usage."""
-    print("="*60)
-    print("ADVISORY SCRAPER - USAGE")
-    print("="*60)
+    print("="*70)
+    print("ADVISORY EXTRACTOR - USAGE EXAMPLES")
+    print("="*70)
     print()
-    print("The advisory scraper directly fetches PDFs from:")
+    print("The advisory extractor parses rainfall warning tables from PDFs:")
     print("  https://www.pagasa.dost.gov.ph/weather/weather-advisory")
     print()
-    print("Usage:")
-    print("  python advisory_scraper.py")
+    print("Usage Examples:")
+    print("="*70)
     print()
-    print("Output location:")
-    print("  dataset/pdfs_advisory/")
+    print("1. Scrape from live URL and extract:")
+    print("   python advisory_scraper.py")
     print()
-    print("What it does:")
-    print("  1. Fetches live HTML from PAGASA weather advisory page")
-    print("  2. Finds elements with class 'col-md-12 article-content weather-advisory'")
-    print("  3. Extracts PDF links from those elements")
-    print("  4. Downloads PDFs to output directory")
+    print("2. Test with random PDF from dataset:")
+    print("   python advisory_scraper.py --random")
+    print()
+    print("3. Test with specific PDF:")
+    print("   python advisory_scraper.py --path 'dataset/pdfs_advisory/file.pdf'")
+    print()
+    print("4. Extract from PDF URL:")
+    print("   python advisory_scraper.py --url 'https://example.com/advisory.pdf'")
+    print()
+    print("5. JSON-only output (for piping):")
+    print("   python advisory_scraper.py --json --random")
+    print()
+    print("="*70)
+    print("OUTPUT FORMAT")
+    print("="*70)
+    print()
+    print("JSON with 3 warning levels (red/orange/yellow):")
+    print("- Red: >200mm rainfall")
+    print("- Orange: 100-200mm rainfall")
+    print("- Yellow: 50-100mm rainfall")
+    print()
+    print("Each level categorizes locations by island groups:")
+    print("- Luzon, Visayas, Mindanao, Other")
+    print()
+    print("Example output:")
+    print("""
+{
+  "source_file": "path/to/file.pdf",
+  "rainfall_warnings": {
+    "red": {
+      "Luzon": "Manila, Quezon City",
+      "Visayas": null,
+      "Mindanao": null,
+      "Other": null
+    },
+    "orange": {...},
+    "yellow": {...}
+  }
+}
+    """)
     print()
 
 

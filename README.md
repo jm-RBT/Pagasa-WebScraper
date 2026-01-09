@@ -34,40 +34,76 @@ python verify_install.py
 
 ## Scripts & Usage
 
-### 1. Weather Advisory Scraper: `advisory_scraper.py` ⭐ **NEW**
+### 1. Weather Advisory Extractor: `advisory_scraper.py` ⭐ **NEW**
 
-Scrape weather advisory PDFs directly from PAGASA's live weather advisory page.
+Extract rainfall warning data from PAGASA weather advisory PDFs with automatic categorization by island groups.
 
 **Basic Usage:**
 ```bash
+# Scrape from live URL and extract
 python advisory_scraper.py
+
+# Test with random PDF from dataset
+python advisory_scraper.py --random
+
+# Test with specific PDF
+python advisory_scraper.py --path "dataset/pdfs_advisory/file.pdf"
+
+# Extract from PDF URL
+python advisory_scraper.py --url "https://example.com/advisory.pdf"
+
+# JSON-only output
+python advisory_scraper.py --json --random
 ```
 
 **Features:**
+- ✓ **PDF extraction using pdfplumber** - Parses rainfall forecast tables
+- ✓ **3 warning levels** - Red (>200mm), Orange (100-200mm), Yellow (50-100mm)
+- ✓ **Island group categorization** - Luzon, Visayas, Mindanao, Other
+- ✓ **Location matching** - Uses consolidated locations database
+- ✓ **Multiple input modes** - Live URL, random, file path, or URL
+- ✓ **JSON output** - Structured data ready for processing
 - ✓ Fetches live page from PAGASA website
-- ✓ Headless HTML parsing with BeautifulSoup
-- ✓ Targets elements with class "col-md-12 article-content weather-advisory"
-- ✓ Automatically extracts and downloads PDFs
-- ✓ Saves PDFs to `dataset/pdfs_advisory/`
-- ✓ Comprehensive error handling and progress logging
-- ✓ Avoids duplicate downloads
-- ✓ Rate limiting to be respectful to servers
+- ✓ Automatically downloads PDFs to `dataset/pdfs_advisory/`
+
+**Arguments:**
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `--url` | string | PDF URL to download and extract |
+| `--path` | string | Local PDF file path to extract |
+| `--random` | flag | Extract from random PDF in dataset |
+| `--json` | flag | Output only JSON (no progress messages) |
+
+**Output Format:**
+```json
+{
+  "source_file": "path/to/file.pdf",
+  "rainfall_warnings": {
+    "red": {
+      "Luzon": "Location1, Location2",
+      "Visayas": null,
+      "Mindanao": null,
+      "Other": null
+    },
+    "orange": {...},
+    "yellow": {...}
+  }
+}
+```
 
 **Target URL:**
 ```
 https://www.pagasa.dost.gov.ph/weather/weather-advisory
 ```
 
-**Output Location:**
-```
-dataset/pdfs_advisory/
-```
-
 **How It Works:**
-1. Fetches HTML content from live PAGASA weather advisory page
-2. Parses HTML to find weather advisory elements
-3. Extracts PDF links from those elements
-4. Downloads PDFs to the output directory
+1. Fetches HTML from live PAGASA weather advisory page (or uses direct PDF path/URL)
+2. Extracts rainfall forecast table from PDF using pdfplumber
+3. Identifies warning levels by rainfall amounts (>200mm, 100-200mm, 50-100mm)
+4. Parses "Today" and "Tomorrow" columns for affected locations
+5. Categorizes locations by island groups using LocationMatcher
+6. Outputs structured JSON with warnings grouped by severity and region
 
 ---
 

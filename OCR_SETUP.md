@@ -2,11 +2,9 @@
 
 This guide explains how to install OCR support for processing image-based/scanned PDFs with the advisory scraper.
 
-## Two OCR Options
+## EasyOCR - Pure Python OCR
 
-The script supports **two OCR methods**:
-
-### Option 1: EasyOCR (Recommended for No Admin Rights) ✅
+The script uses **EasyOCR** for OCR functionality - a pure Python library that requires no system installation.
 
 **Pure Python library - no system installation needed!**
 
@@ -15,62 +13,46 @@ The script supports **two OCR methods**:
 pip install -r requirements-ocr-easyocr.txt
 
 # OR install manually:
-# pip install easyocr pdf2image
+pip install easyocr pdf2image
 ```
 
 **Pros:**
 - ✅ No system-level installation required
 - ✅ Works without admin/sudo permissions
-- ✅ Easy to install on any platform
+- ✅ Easy to install on any platform (Windows, Linux, macOS)
 - ✅ Good accuracy
+- ✅ Supports multiple languages
 
 **Cons:**
-- ⚠️ Slower than Tesseract (first run downloads model ~100MB)
-- ⚠️ Uses more memory
+- ⚠️ First run downloads model (~100MB)
+- ⚠️ Uses more memory than text-based PDF extraction
 
-**Best for:** Users without admin rights, Windows users, quick setup
+**Perfect for:** Users without admin rights, Windows users, quick setup
 
 ---
 
-### Option 2: Tesseract (Faster, Requires System Package)
+## Installation Steps
 
+### Step 1: Install Core Dependencies
+
+First, install the core dependencies:
 ```bash
-# Step 1: Install Python library
-pip install pytesseract pdf2image
-
-# OR install from requirements file (Python 3.8.10 compatible)
-pip install -r requirements-ocr-tesseract.txt
-
-# Step 2: Install system package (requires admin/sudo)
-# See platform-specific instructions below
+pip install -r requirements.txt
 ```
 
-**Pros:**
-- ✅ Faster processing
-- ✅ Lower memory usage
-- ✅ Mature, well-tested
-
-**Cons:**
-- ⚠️ Requires system-level installation
-- ⚠️ Needs admin/sudo permissions
-
-**Best for:** Users with admin rights, production environments
-
----
-
-## Installation Instructions
-
-### Option 1: EasyOCR (No System Install)
+### Step 2: Install EasyOCR
 
 ```bash
 # Install Python dependencies (Python 3.8.10 compatible)
 pip install -r requirements-ocr-easyocr.txt
 
 # OR install manually:
-# pip install easyocr pdf2image
+pip install easyocr pdf2image
 
 # That's it! No system package needed.
 ```
+
+### Step 3: Verify Installation
 
 **Verify installation:**
 ```bash
@@ -79,42 +61,6 @@ python -c "from pdf2image import convert_from_path; print('pdf2image: OK')"
 ```
 
 ---
-
-### Option 2: Tesseract (With System Package)
-
-#### Step 1: Install Python Dependencies
-
-```bash
-pip install pytesseract pdf2image
-```
-
-#### Step 2: Install Tesseract OCR Engine (System Package)
-
-##### Ubuntu/Debian/WSL
-```bash
-sudo apt-get update
-sudo apt-get install tesseract-ocr
-```
-
-##### macOS
-```bash
-brew install tesseract
-```
-
-##### Windows
-1. Download the installer from: https://github.com/UB-Mannheim/tesseract/wiki
-2. Run the installer
-3. Add Tesseract to your system PATH
-
-#### Step 3: Verify Installation
-
-Test that OCR is working:
-
-```bash
-python -c "import pytesseract; print('pytesseract:', pytesseract.__version__)"
-python -c "from pdf2image import convert_from_path; print('pdf2image: OK')"
-tesseract --version
-```
 
 ## Usage
 
@@ -130,17 +76,19 @@ python advisory_scraper.py --ocr "document.pdf"
 
 ## Troubleshooting
 
-### "tesseract is not installed" error
-- Make sure you installed the **system package** (step 2 above), not just the Python library
-- Verify installation: `tesseract --version`
-
 ### "Unable to get page count" error (Windows)
 - Install poppler for Windows: https://github.com/oschwartz10612/poppler-windows/releases
 - Add poppler's bin directory to your system PATH
 
-### "No such file or directory: 'tesseract'" error (macOS)
-- Ensure tesseract is installed: `brew install tesseract`
-- Check PATH: `which tesseract`
+### EasyOCR model download issues
+- EasyOCR downloads models (~100MB) on first run
+- Ensure you have a stable internet connection
+- Models are cached in `~/.EasyOCR/` directory
+
+### Memory issues
+- EasyOCR may use significant memory for large images
+- Consider reducing PDF DPI if experiencing issues
+- Close other applications to free up memory
 
 ## Optional: OCR is Not Required
 

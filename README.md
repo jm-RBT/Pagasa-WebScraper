@@ -61,7 +61,7 @@ python advisory_scraper.py --json --random
 
 **Features:**
 - ✓ **PDF extraction using pdfplumber** - Parses rainfall forecast tables
-- ✓ **OCR support (optional)** - Handles image-based/scanned PDFs with pytesseract
+- ✓ **OCR support (optional)** - Handles image-based/scanned PDFs with EasyOCR
 - ✓ **Auto OCR detection** - Automatically tries OCR when PDF has no text layer
 - ✓ **3 warning levels** - Red (>200mm), Orange (100-200mm), Yellow (50-100mm)
 - ✓ **Island group categorization** - Luzon, Visayas, Mindanao, Other
@@ -78,30 +78,19 @@ python advisory_scraper.py --json --random
 |----------|------|-------------|
 | `source` | string | PDF file path or URL (auto-detected, optional) |
 | `--random` | flag | Extract from random PDF in dataset |
-| `--ocr` | flag | Use OCR for image-based PDFs (easyocr or pytesseract) |
+| `--ocr` | flag | Use OCR for image-based PDFs (requires easyocr) |
 | `--json` | flag | Output only JSON (no progress messages) |
 
-**OCR Setup (Optional - Two Options):**
+**OCR Setup (Optional):**
 
-**Option 1 - EasyOCR (No system install needed):**
+**EasyOCR - Pure Python, no system install:**
 ```bash
 # Python 3.8.10 compatible
 pip install -r requirements-ocr-easyocr.txt
 # Works without admin rights!
 ```
 
-**Option 2 - Tesseract (Faster, needs system package):**
-```bash
-# Python 3.8.10 compatible
-pip install -r requirements-ocr-tesseract.txt
-
-# Install Tesseract OCR engine (system package - requires admin)
-# Ubuntu/Debian: sudo apt-get install tesseract-ocr
-# macOS: brew install tesseract
-# Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
-```
-
-See `OCR_SETUP.md` for detailed comparison and instructions.
+See `OCR_SETUP.md` for detailed instructions.
 
 **Output Format:**
 ```json

@@ -37,6 +37,7 @@ CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent / "bin" / "consolidated_loca
 
 # Pattern matching constants
 PATTERN_SEARCH_WINDOW = 50  # Characters to search backward for pattern boundaries
+LOCATION_NAME_PATTERN = r'[A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?'  # Matches single or two-word location names
 
 
 class RainfallAdvisoryExtractor:
@@ -445,30 +446,30 @@ class RainfallAdvisoryExtractor:
         text = text.replace('\n', ' ').replace('\r', ' ')
         text = ' '.join(text.split())  # Normalize whitespace
         
-        # Find the last occurrence of ", and Location" pattern which marks 
-        # the end of the "Today" column
-        # Pattern: comma, optional spaces, "and", spaces, word characters (location name)
-        # After this, we should stop
-        
-        # Try to find the pattern: ", and Location" where Location might be 1-2 words
-        # The next location after "and Location" will NOT have a comma before it
-        pattern = r',\s+and\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+([A-Z][a-zA-Z]+)'
+        # Find the first occurrence of column break pattern: ", and Location NextLocation"
+        # where NextLocation has no comma before it (indicates start of Tomorrow column)
+        # Pattern breakdown:
+        #   ,\s+and\s+     - comma, spaces, "and", spaces
+        #   (LOCATION)     - capture group 1: location name after "and"
+        #   \s+            - spaces between columns
+        #   (LOCATION)     - capture group 2: next location (Tomorrow column start)
+        pattern = rf',\s+and\s+({LOCATION_NAME_PATTERN})\s+({LOCATION_NAME_PATTERN})'
         match = re.search(pattern, text)
         
         if match:
-            # Found the pattern - extract text up to and including the location after "and"
-            # But not including the next location (which starts the Tomorrow column)
-            end_pos = match.start(2)  # Position where the next location starts
+            # Found column break - extract up to (but not including) the Tomorrow column
+            # match.start(2) is where the next location (Tomorrow column) starts
+            end_pos = match.start(2)
             today_text = text[:end_pos].strip()
         else:
-            # No clear column break found, try the simple ", and Location -" pattern
-            # where "-" or double space marks the end
-            simple_pattern = r',\s+and\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*[-\s]{2,}'
+            # No clear column break found, try fallback: ", and Location" followed by dash/spaces
+            # This handles cases where there's no Tomorrow column or different formatting
+            simple_pattern = rf',\s+and\s+({LOCATION_NAME_PATTERN})\s*[-\s]{{2,}}'
             simple_match = re.search(simple_pattern, text)
             if simple_match:
                 today_text = text[:simple_match.end(1)].strip()
             else:
-                # Fall back to using the entire text up to double spaces or dash
+                # Final fallback: split by double spaces or dash
                 if '  ' in text:
                     today_text = text.split('  ')[0].strip()
                 elif ' - ' in text:

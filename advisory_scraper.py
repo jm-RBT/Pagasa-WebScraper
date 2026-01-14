@@ -78,6 +78,12 @@ class RainfallAdvisoryExtractor:
         
         Example: "Metro Manila" is not in CSV, but "Manila" is, so "Metro Manila" is valid.
         
+        Note: This token-based approach may accept some false positives (e.g., "Invalid Manila"
+        would be accepted because "Manila" is in the CSV). However, this is acceptable for 
+        PAGASA advisories which use standardized location naming conventions. The benefit of
+        accepting legitimate multi-word locations (like "Metro Manila") outweighs the risk
+        of false positives in this controlled domain.
+        
         Args:
             location: Location name to validate
             

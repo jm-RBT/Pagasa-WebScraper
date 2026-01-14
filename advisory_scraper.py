@@ -406,30 +406,13 @@ class RainfallAdvisoryExtractor:
             # Extract text segment for this warning level
             segment = text[start_pos:end_pos].strip()
             
-            # Split by common date headers to get multiple columns
-            # Pattern: "Today (Date)" or "Tomorrow (Date)" etc.
-            date_pattern = r'(?:Today|Tomorrow|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*\([^)]+\)'
-            
-            # Split by date headers
-            date_sections = re.split(date_pattern, segment, flags=re.IGNORECASE)
-            
-            all_locations = []
-            
-            for section in date_sections:
-                if not section.strip():
-                    continue
-                
-                # Stop at "Potential Impacts" or similar text
-                if re.search(r'potential\s+impacts', section, re.IGNORECASE):
-                    # Extract only text before "Potential Impacts"
-                    section = re.split(r'potential\s+impacts', section, flags=re.IGNORECASE)[0]
-                
-                # Parse locations from this section
-                locations = self.parse_locations_text(section.strip())
-                all_locations.extend(locations)
+            # Extract only the "Today" column (first column of locations)
+            # The "Today" column ends when we find "and Location" followed by 
+            # another location without a comma (indicating start of "Tomorrow" column)
+            today_locations = self.extract_today_column_locations(segment)
             
             # Remove duplicates and add to warnings
-            unique_locations = list(dict.fromkeys(all_locations))  # Preserves order
+            unique_locations = list(dict.fromkeys(today_locations))  # Preserves order
             warnings[level].extend(unique_locations)
             
             print(f"[INFO] Extracted {len(unique_locations)} locations for {level} warning")
@@ -439,6 +422,62 @@ class RainfallAdvisoryExtractor:
             warnings[level] = list(dict.fromkeys(warnings[level]))
         
         return warnings
+    
+    def extract_today_column_locations(self, text: str) -> List[str]:
+        """
+        Extract locations only from the "Today" column.
+        
+        The "Today" column ends when we find a location preceded by "and" followed by
+        another location that starts without a comma (indicating column break).
+        
+        Example: "Location1, Location2, and Location3 Location4" 
+                 -> Extract: Location1, Location2, Location3
+                 -> Stop at: Location4 (starts Tomorrow column)
+        """
+        if not text or text.strip() == '-' or text.strip() == '':
+            return []
+        
+        # Stop at "Potential Impacts" or similar text
+        if re.search(r'potential\s+impacts', text, re.IGNORECASE):
+            text = re.split(r'potential\s+impacts', text, flags=re.IGNORECASE)[0]
+        
+        # Clean up the text
+        text = text.replace('\n', ' ').replace('\r', ' ')
+        text = ' '.join(text.split())  # Normalize whitespace
+        
+        # Find the last occurrence of ", and Location" pattern which marks 
+        # the end of the "Today" column
+        # Pattern: comma, optional spaces, "and", spaces, word characters (location name)
+        # After this, we should stop
+        
+        # Try to find the pattern: ", and Location" where Location might be 1-2 words
+        # The next location after "and Location" will NOT have a comma before it
+        pattern = r',\s+and\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s+([A-Z][a-zA-Z]+)'
+        match = re.search(pattern, text)
+        
+        if match:
+            # Found the pattern - extract text up to and including the location after "and"
+            # But not including the next location (which starts the Tomorrow column)
+            end_pos = match.start(2)  # Position where the next location starts
+            today_text = text[:end_pos].strip()
+        else:
+            # No clear column break found, try the simple ", and Location -" pattern
+            # where "-" or double space marks the end
+            simple_pattern = r',\s+and\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\s*[-\s]{2,}'
+            simple_match = re.search(simple_pattern, text)
+            if simple_match:
+                today_text = text[:simple_match.end(1)].strip()
+            else:
+                # Fall back to using the entire text up to double spaces or dash
+                if '  ' in text:
+                    today_text = text.split('  ')[0].strip()
+                elif ' - ' in text:
+                    today_text = text.split(' - ')[0].strip()
+                else:
+                    today_text = text.strip()
+        
+        # Parse the locations from the "Today" column text
+        return self.parse_locations_text(today_text)
     
     def extract_rainfall_warnings(self, url: str) -> Dict:
         """

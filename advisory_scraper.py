@@ -311,6 +311,8 @@ class RainfallAdvisoryExtractor:
     
     def extract_advisory_text_from_html(self, html_content: str) -> Optional[str]:
         """Extract rainfall advisory text from HTML content"""
+        import html
+        
         soup = BeautifulSoup(html_content, 'html.parser')
         
         # Find the weekly-content-adv div
@@ -328,7 +330,8 @@ class RainfallAdvisoryExtractor:
             # Check if this comment contains rainfall data
             if 'rainfall' in comment_text.lower() or 'mm)' in comment_text.lower():
                 print("[INFO] Found rainfall data in HTML comment")
-                return comment_text
+                # Decode HTML entities (e.g., &gt; to >, &nbsp; to space)
+                return html.unescape(comment_text)
         
         # If no comments found, try to extract from paragraph tags
         paragraphs = advisory_div.find_all('p')

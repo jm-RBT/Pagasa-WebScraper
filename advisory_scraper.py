@@ -480,7 +480,8 @@ class RainfallAdvisoryExtractor:
             return []
         
         # Check if Today column is empty BEFORE normalization
-        # Pattern 1: starts with dash (after optional whitespace)
+        # Pattern 1: starts with dash (may be followed by Tomorrow column content)
+        # Example: "- Northern Samar" means Today is empty (dash), Tomorrow has "Northern Samar"
         if text.strip().startswith('-'):
             return []
         

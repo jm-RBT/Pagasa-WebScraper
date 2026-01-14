@@ -68,6 +68,39 @@ class RainfallAdvisoryExtractor:
         
         return locations
     
+    def is_valid_location(self, location: str) -> bool:
+        """
+        Check if a location is valid using direct match or token-based validation.
+        
+        If the location is not found directly in the CSV, tokenize it by whitespace
+        and check if any of the tokens exist in the CSV. If at least one token is
+        found, consider the whole location valid.
+        
+        Example: "Metro Manila" is not in CSV, but "Manila" is, so "Metro Manila" is valid.
+        
+        Args:
+            location: Location name to validate
+            
+        Returns:
+            True if location is valid (direct match or token match), False otherwise
+        """
+        if not self.valid_locations:
+            # No validation data available, accept all locations
+            return True
+        
+        # Direct match - most common case
+        if location in self.valid_locations:
+            return True
+        
+        # Token-based validation fallback
+        # Split by whitespace and check if any token exists in CSV
+        tokens = location.split()
+        for token in tokens:
+            if token in self.valid_locations:
+                return True
+        
+        return False
+    
     def parse_locations_text(self, text: str) -> List[str]:
         """
         Parse location text into individual locations.
@@ -125,7 +158,7 @@ class RainfallAdvisoryExtractor:
                     if words[0] in directional_prefixes and len(words) >= 2:
                         # "and Northern Samar Location2" - check if "Northern Samar" is valid
                         combined = f"{words[0]} {words[1]}"
-                        if not self.valid_locations or combined in self.valid_locations:
+                        if not self.valid_locations or self.is_valid_location(combined):
                             locations.append(combined)
                             # Continue with remaining words as a new section
                             if len(words) > 2:
@@ -136,7 +169,7 @@ class RainfallAdvisoryExtractor:
                             continue
                     
                     # Try single word as location
-                    if not self.valid_locations or words[0] in self.valid_locations:
+                    if not self.valid_locations or self.is_valid_location(words[0]):
                         locations.append(words[0])
                         # Continue parsing remaining words as new column
                         if len(words) > 1:
@@ -151,7 +184,7 @@ class RainfallAdvisoryExtractor:
                 
                 elif len(words) == 1:
                     # Just "and Location"
-                    if not self.valid_locations or words[0] in self.valid_locations:
+                    if not self.valid_locations or self.is_valid_location(words[0]):
                         locations.append(words[0])
                     else:
                         break
@@ -169,7 +202,7 @@ class RainfallAdvisoryExtractor:
             if len(words) > 2:
                 # Try to match as a compound location first
                 compound = ' '.join(words)
-                if self.valid_locations and compound in self.valid_locations:
+                if self.valid_locations and self.is_valid_location(compound):
                     locations.append(compound)
                     i += 1
                     continue
@@ -182,7 +215,7 @@ class RainfallAdvisoryExtractor:
                         # Check directional prefix
                         if words[j] in directional_prefixes:
                             combined = f"{words[j]} {words[j+1]}"
-                            if not self.valid_locations or combined in self.valid_locations:
+                            if not self.valid_locations or self.is_valid_location(combined):
                                 locations.append(combined)
                                 j += 2
                                 added = True
@@ -191,7 +224,7 @@ class RainfallAdvisoryExtractor:
                         # Check directional suffix
                         if words[j+1] in directional_suffixes:
                             combined = f"{words[j]} {words[j+1]}"
-                            if not self.valid_locations or combined in self.valid_locations:
+                            if not self.valid_locations or self.is_valid_location(combined):
                                 locations.append(combined)
                                 j += 2
                                 added = True
@@ -199,7 +232,7 @@ class RainfallAdvisoryExtractor:
                     
                     # Single word location
                     if self.valid_locations:
-                        if words[j] in self.valid_locations:
+                        if self.is_valid_location(words[j]):
                             locations.append(words[j])
                             j += 1
                             added = True
@@ -233,7 +266,7 @@ class RainfallAdvisoryExtractor:
                     
                     # Validate location if we have the list
                     if self.valid_locations:
-                        if combined in self.valid_locations:
+                        if self.is_valid_location(combined):
                             locations.append(combined)
                             i += 2
                             continue
@@ -246,7 +279,7 @@ class RainfallAdvisoryExtractor:
                         continue
                 else:
                     # Standalone directional, keep as is (unusual but possible)
-                    if not self.valid_locations or part in self.valid_locations:
+                    if not self.valid_locations or self.is_valid_location(part):
                         locations.append(part)
                     else:
                         break  # Invalid location - stop
@@ -262,7 +295,7 @@ class RainfallAdvisoryExtractor:
                     
                     # Validate location
                     if self.valid_locations:
-                        if combined in self.valid_locations:
+                        if self.is_valid_location(combined):
                             locations.append(combined)
                             i += 2
                             continue
@@ -275,7 +308,7 @@ class RainfallAdvisoryExtractor:
             
             # Regular location - validate and add it
             if self.valid_locations:
-                if part in self.valid_locations:
+                if self.is_valid_location(part):
                     locations.append(part)
                 else:
                     # Invalid location - stop parsing

@@ -29,13 +29,15 @@ from bs4 import BeautifulSoup, Comment
 from typing import Dict, List, Optional, Set
 import time
 import pdfplumber
+import tempfile
 
 
 # Configuration
 TARGET_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
 WEB_ARCHIVE_URL_TEMPLATE = "https://web.archive.org/web/{timestamp}/https://www.pagasa.dost.gov.ph/weather/weather-advisory"
 CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent / "bin" / "consolidated_locations.csv"
-OUTPUT_DIR = Path(__file__).parent / "dataset" / "pdfs_advisory"
+# Use system temp directory for temporary PDF storage
+OUTPUT_DIR = Path(tempfile.gettempdir()) / "pagasa_advisory_temp"
 
 # Pattern matching constants
 PATTERN_SEARCH_WINDOW = 50  # Characters to search backward for pattern boundaries
@@ -687,31 +689,23 @@ def fetch_page_html(url):
 
 
 def download_pdf(pdf_url, output_dir):
-    """Download a PDF file"""
+    """Download a PDF file to temporary location"""
     try:
         # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        parsed_url = urlparse(pdf_url)
-        filename = os.path.basename(parsed_url.path)
-        
-        if not filename or not filename.endswith('.pdf'):
-            filename = f"advisory_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-        
+        # Always use advisory_ prefix for temporary files
+        filename = f"advisory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
         output_path = output_dir / filename
         
-        if output_path.exists():
-            print(f"[INFO] File already exists: {filename}")
-            return output_path
-        
-        print(f"[INFO] Downloading PDF: {filename}")
+        print(f"[INFO] Downloading PDF to temporary location: {filename}")
         response = requests.get(pdf_url, timeout=60)
         response.raise_for_status()
         
         with open(output_path, 'wb') as f:
             f.write(response.content)
         
-        print(f"[SUCCESS] Saved PDF: {output_path}")
+        print(f"[INFO] Downloaded PDF temporarily: {output_path}")
         return output_path
     except Exception as e:
         print(f"[ERROR] Failed to download PDF: {e}")
@@ -802,13 +796,21 @@ def extract_from_url(url: str) -> Dict:
         pdf_path = download_pdf(url, OUTPUT_DIR)
         
         if pdf_path:
-            warnings = extractor.extract_rainfall_warnings_from_pdf(str(pdf_path))
-            source_type = "PDF (downloaded)"
-            
-            if warnings is None:
-                print("[INFO] PDF is image-based, cannot fall back to HTML for direct PDF URL")
-                warnings = extractor._empty_warnings()
-                source_type = "PDF (image-based, no HTML fallback)"
+            try:
+                warnings = extractor.extract_rainfall_warnings_from_pdf(str(pdf_path))
+                source_type = "PDF (downloaded)"
+                
+                if warnings is None:
+                    print("[INFO] PDF is image-based, cannot fall back to HTML for direct PDF URL")
+                    warnings = extractor._empty_warnings()
+                    source_type = "PDF (image-based, no HTML fallback)"
+            finally:
+                # Clean up: delete temporary PDF file
+                try:
+                    pdf_path.unlink()
+                    print(f"[INFO] Deleted temporary PDF: {pdf_path.name}")
+                except Exception as e:
+                    print(f"[WARNING] Failed to delete temporary PDF: {e}")
         else:
             warnings = extractor._empty_warnings()
             source_type = "Failed"
@@ -825,18 +827,26 @@ def extract_from_url(url: str) -> Dict:
             pdf_path = download_pdf(pdf_url, OUTPUT_DIR)
             
             if pdf_path:
-                # Step 3: Try PDF extraction
-                print("[INFO] Attempting PDF extraction")
-                warnings = extractor.extract_rainfall_warnings_from_pdf(str(pdf_path))
-                
-                if warnings is not None and any(len(v) > 0 for v in warnings.values()):
-                    # PDF extraction successful
-                    source_type = "PDF (text-based)"
-                    print(f"[SUCCESS] Extracted from PDF: {sum(len(v) for v in warnings.values())} total locations")
-                else:
-                    # PDF extraction failed or returned empty results
-                    print("[INFO] PDF extraction unsuccessful, falling back to HTML")
-                    warnings = None
+                try:
+                    # Step 3: Try PDF extraction
+                    print("[INFO] Attempting PDF extraction")
+                    warnings = extractor.extract_rainfall_warnings_from_pdf(str(pdf_path))
+                    
+                    if warnings is not None and any(len(v) > 0 for v in warnings.values()):
+                        # PDF extraction successful
+                        source_type = "PDF (text-based)"
+                        print(f"[SUCCESS] Extracted from PDF: {sum(len(v) for v in warnings.values())} total locations")
+                    else:
+                        # PDF extraction failed or returned empty results
+                        print("[INFO] PDF extraction unsuccessful, falling back to HTML")
+                        warnings = None
+                finally:
+                    # Clean up: delete temporary PDF file
+                    try:
+                        pdf_path.unlink()
+                        print(f"[INFO] Deleted temporary PDF: {pdf_path.name}")
+                    except Exception as e:
+                        print(f"[WARNING] Failed to delete temporary PDF: {e}")
         
         # Step 4: Fall back to HTML extraction if PDF failed
         if warnings is None:

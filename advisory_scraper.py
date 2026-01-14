@@ -694,8 +694,9 @@ def download_pdf(pdf_url, output_dir):
         # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
         
-        # Always use advisory_ prefix for temporary files
-        filename = f"advisory_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        # Always use advisory_ prefix for temporary files with microseconds for uniqueness
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_%f')
+        filename = f"advisory_{timestamp}.pdf"
         output_path = output_dir / filename
         
         print(f"[INFO] Downloading PDF to temporary location: {filename}")
@@ -710,6 +711,15 @@ def download_pdf(pdf_url, output_dir):
     except Exception as e:
         print(f"[ERROR] Failed to download PDF: {e}")
         return None
+
+
+def cleanup_temp_pdf(pdf_path):
+    """Delete temporary PDF file with error handling"""
+    try:
+        pdf_path.unlink()
+        print(f"[INFO] Deleted temporary PDF: {pdf_path.name}")
+    except Exception as e:
+        print(f"[WARNING] Failed to delete temporary PDF: {e}")
 
 
 def extract_pdf_url_from_page(page_url):
@@ -806,11 +816,7 @@ def extract_from_url(url: str) -> Dict:
                     source_type = "PDF (image-based, no HTML fallback)"
             finally:
                 # Clean up: delete temporary PDF file
-                try:
-                    pdf_path.unlink()
-                    print(f"[INFO] Deleted temporary PDF: {pdf_path.name}")
-                except Exception as e:
-                    print(f"[WARNING] Failed to delete temporary PDF: {e}")
+                cleanup_temp_pdf(pdf_path)
         else:
             warnings = extractor._empty_warnings()
             source_type = "Failed"
@@ -842,11 +848,7 @@ def extract_from_url(url: str) -> Dict:
                         warnings = None
                 finally:
                     # Clean up: delete temporary PDF file
-                    try:
-                        pdf_path.unlink()
-                        print(f"[INFO] Deleted temporary PDF: {pdf_path.name}")
-                    except Exception as e:
-                        print(f"[WARNING] Failed to delete temporary PDF: {e}")
+                    cleanup_temp_pdf(pdf_path)
         
         # Step 4: Fall back to HTML extraction if PDF failed
         if warnings is None:

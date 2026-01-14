@@ -473,17 +473,29 @@ class RainfallAdvisoryExtractor:
         Example: "Location1, Location2, and Location3 Location4" 
                  -> Extract: Location1, Location2, Location3
                  -> Stop at: Location4 (starts Tomorrow column)
+        
+        If the Today column is empty (starts with "-" or double spaces), returns empty list.
         """
         if not text or text.strip() == '-' or text.strip() == '':
             return []
         
-        # Stop at "Potential Impacts" or similar text
-        if re.search(r'potential\s+impacts', text, re.IGNORECASE):
-            text = re.split(r'potential\s+impacts', text, flags=re.IGNORECASE)[0]
+        # Check if Today column is empty BEFORE normalization
+        # Pattern 1: starts with dash (after optional whitespace)
+        if text.strip().startswith('-'):
+            return []
+        
+        # Pattern 2: starts with double (or more) spaces - indicates empty Today column
+        # Check the raw text before normalization
+        if re.match(r'^\s{2,}', text):
+            return []
         
         # Clean up the text
         text = text.replace('\n', ' ').replace('\r', ' ')
         text = ' '.join(text.split())  # Normalize whitespace
+        
+        # Stop at "Potential Impacts" or similar text
+        if re.search(r'potential\s+impacts', text, re.IGNORECASE):
+            text = re.split(r'potential\s+impacts', text, flags=re.IGNORECASE)[0]
         
         # Find the first occurrence of column break pattern: ", and Location NextLocation"
         # where NextLocation has no comma before it (indicates start of Tomorrow column)

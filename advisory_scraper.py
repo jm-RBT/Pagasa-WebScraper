@@ -368,7 +368,8 @@ class RainfallAdvisoryExtractor:
             
             # Remove leading "and " if present (but still process the rest)
             if part.lower().startswith('and '):
-                part = part[4:].strip()  # Remove "and "
+                AND_PREFIX_LEN = len('and ')
+                part = part[AND_PREFIX_LEN:].strip()  # Remove "and "
             
             # Check if this is a directional prefix that should be combined with next part
             if part in directional_prefixes and i + 1 < len(parts):

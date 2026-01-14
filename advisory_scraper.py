@@ -20,12 +20,14 @@ import re
 import json
 import csv
 import argparse
+import html
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup, Comment
 from typing import Dict, List, Optional, Set
 import time
+
 
 
 # Configuration
@@ -311,8 +313,6 @@ class RainfallAdvisoryExtractor:
     
     def extract_advisory_text_from_html(self, html_content: str) -> Optional[str]:
         """Extract rainfall advisory text from HTML content"""
-        import html
-        
         soup = BeautifulSoup(html_content, 'html.parser')
         
         # Find the weekly-content-adv div

@@ -20,6 +20,7 @@ import psutil
 import os
 from pathlib import Path
 from urllib.parse import urlparse
+from advisory_scraper import scrape_and_extract
 
 def cpu_throttle(process, target_cpu_percent=30, sample_interval=0.1):
     """
@@ -131,6 +132,30 @@ def check_pdf_safety(filepath):
     print("  Overall: [OK] PDF appears safe to process\n")
     return True
 
+def fetch_live_advisory_data():
+    """
+    Fetch live rainfall advisory data from PAGASA.
+    Returns dict with keys: red, orange, yellow (each containing list of locations)
+    Returns None if fetch fails.
+    """
+    try:
+        print("[INFO] Fetching live rainfall advisory from PAGASA...")
+        result = scrape_and_extract()
+        
+        if result and 'rainfall_warnings' in result:
+            warnings = result['rainfall_warnings']
+            print(f"[INFO] Successfully fetched advisory data:")
+            print(f"  - Red warnings: {len(warnings.get('red', []))} locations")
+            print(f"  - Orange warnings: {len(warnings.get('orange', []))} locations")
+            print(f"  - Yellow warnings: {len(warnings.get('yellow', []))} locations")
+            return warnings
+        else:
+            print("[WARNING] Advisory data fetch returned no warnings")
+            return None
+    except Exception as e:
+        print(f"[WARNING] Failed to fetch advisory data: {e}")
+        return None
+
 def display_results(data):
     """Display extraction results in a readable format"""
     print("\n" + "=" * 80)
@@ -172,25 +197,20 @@ def display_results(data):
     rainfall_found = False
     
     rainfall_levels = {
-        1: "Level 1 - Intense Rainfall (>30mm/hr, RED)",
-        2: "Level 2 - Heavy Rainfall (15-30mm/hr, ORANGE)",
-        3: "Level 3 - Heavy Rainfall Advisory (7.5-15mm/hr, YELLOW)"
+        1: "Red Warning - Heavy to Intense Rainfall (>200mm/24hr)",
+        2: "Orange Warning - Moderate to Heavy Rainfall (100-200mm/24hr)",
+        3: "Yellow Warning - Light to Moderate Rainfall (50-100mm/24hr)"
     }
     
     for level in range(1, 4):
         tag_key = f'rainfall_warning_tags{level}'
-        tag = data.get(tag_key, {})
+        locations = data.get(tag_key, [])
         
-        # Check if any island group has locations
-        has_locations = any(tag.get(ig) for ig in ['Luzon', 'Visayas', 'Mindanao', 'Other'])
-        
-        if has_locations:
+        # Check if there are any locations (new format is a list)
+        if locations and len(locations) > 0:
             rainfall_found = True
             print(f"\n  {rainfall_levels[level]}:")
-            for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
-                locations = tag.get(island_group)
-                if locations:
-                    print(f"    {island_group:12} -> {locations}")
+            print(f"    Locations: {', '.join(locations)}")
         else:
             print(f"\n  {rainfall_levels[level]}: No warnings")
     
@@ -299,6 +319,31 @@ def main():
             elapsed = time.time() - start_time
             print(f"\n[TIME] Execution time: {elapsed:.2f}s")
             sys.exit(1)
+        
+        # Fetch live advisory data and merge with PDF extraction results
+        advisory_data = fetch_live_advisory_data()
+        if advisory_data:
+            # Replace rainfall warnings with live advisory data
+            # Map: red -> rainfall_warning_tags1, orange -> rainfall_warning_tags2, yellow -> rainfall_warning_tags3
+            data['rainfall_warning_tags1'] = advisory_data.get('red', [])
+            data['rainfall_warning_tags2'] = advisory_data.get('orange', [])
+            data['rainfall_warning_tags3'] = advisory_data.get('yellow', [])
+            print("[INFO] Replaced rainfall warnings with live advisory data")
+        else:
+            # If advisory fetch fails, convert existing IslandGroupType format to list format
+            print("[INFO] Using PDF-extracted rainfall data (advisory fetch failed)")
+            for level in range(1, 4):
+                tag_key = f'rainfall_warning_tags{level}'
+                old_format = data.get(tag_key, {})
+                # Convert IslandGroupType dict to list of locations
+                locations = []
+                if isinstance(old_format, dict):
+                    for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
+                        loc_str = old_format.get(island_group)
+                        if loc_str:
+                            # Split by comma and add to list
+                            locations.extend([loc.strip() for loc in loc_str.split(',')])
+                data[tag_key] = locations
         
         # Display in readable format
         display_results(data)

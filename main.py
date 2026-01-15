@@ -42,6 +42,7 @@ import tempfile
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from contextlib import contextmanager
+from advisory_scraper import scrape_and_extract
 
 
 @contextmanager
@@ -137,6 +138,35 @@ def get_latest_pdf(pdf_urls):
     return pdf_urls[-1]
 
 
+def fetch_live_advisory_data(verbose=False):
+    """
+    Fetch live rainfall advisory data from PAGASA.
+    Returns dict with keys: red, orange, yellow (each containing list of locations)
+    Returns None if fetch fails.
+    """
+    try:
+        if verbose:
+            print("[INFO] Fetching live rainfall advisory from PAGASA...", file=sys.stderr)
+        result = scrape_and_extract()
+        
+        if result and 'rainfall_warnings' in result:
+            warnings = result['rainfall_warnings']
+            if verbose:
+                print(f"[INFO] Successfully fetched advisory data:", file=sys.stderr)
+                print(f"  - Red warnings: {len(warnings.get('red', []))} locations", file=sys.stderr)
+                print(f"  - Orange warnings: {len(warnings.get('orange', []))} locations", file=sys.stderr)
+                print(f"  - Yellow warnings: {len(warnings.get('yellow', []))} locations", file=sys.stderr)
+            return warnings
+        else:
+            if verbose:
+                print("[WARNING] Advisory data fetch returned no warnings", file=sys.stderr)
+            return None
+    except Exception as e:
+        if verbose:
+            print(f"[WARNING] Failed to fetch advisory data: {e}", file=sys.stderr)
+        return None
+
+
 
 
 def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
@@ -192,6 +222,33 @@ def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
         if low_cpu_mode:
             from analyze_pdf import cpu_throttle
             cpu_throttle(process, target_cpu_percent=30)
+        
+        # Fetch live advisory data and merge with PDF extraction results
+        advisory_data = fetch_live_advisory_data(verbose=verbose)
+        if advisory_data and any(advisory_data.get(level, []) for level in ['red', 'orange', 'yellow']):
+            # Replace rainfall warnings with live advisory data
+            # Map: red -> rainfall_warning_tags1, orange -> rainfall_warning_tags2, yellow -> rainfall_warning_tags3
+            data['rainfall_warning_tags1'] = advisory_data.get('red', [])
+            data['rainfall_warning_tags2'] = advisory_data.get('orange', [])
+            data['rainfall_warning_tags3'] = advisory_data.get('yellow', [])
+            if verbose:
+                print("[INFO] Replaced rainfall warnings with live advisory data", file=sys.stderr)
+        else:
+            # If advisory fetch fails or returns empty data, convert existing IslandGroupType format to list format
+            if verbose:
+                print("[INFO] Using PDF-extracted rainfall data (advisory fetch failed or returned no data)", file=sys.stderr)
+            for level in range(1, 4):
+                tag_key = f'rainfall_warning_tags{level}'
+                old_format = data.get(tag_key, {})
+                # Convert IslandGroupType dict to list of locations
+                locations = []
+                if isinstance(old_format, dict):
+                    for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
+                        loc_str = old_format.get(island_group)
+                        if loc_str:
+                            # Split by comma and add to list, filtering out empty strings
+                            locations.extend([loc.strip() for loc in loc_str.split(',') if loc.strip()])
+                data[tag_key] = locations
         
         return data
     except Exception as e:
@@ -252,25 +309,22 @@ def display_results(typhoon_name, data):
     rainfall_found = False
     
     rainfall_levels = {
-        1: "Level 1 - Intense Rainfall (>30mm/hr, RED)",
-        2: "Level 2 - Heavy Rainfall (15-30mm/hr, ORANGE)",
-        3: "Level 3 - Heavy Rainfall Advisory (7.5-15mm/hr, YELLOW)"
+        1: "Red Warning - Intense Rainfall (>200mm/24hr)",
+        2: "Orange Warning - Heavy Rainfall (100-200mm/24hr)",
+        3: "Yellow Warning - Moderate Rainfall (50-100mm/24hr)"
     }
     
     for level in range(1, 4):
         tag_key = f'rainfall_warning_tags{level}'
-        tag = data.get(tag_key, {})
+        locations = data.get(tag_key, [])
         
-        # Check if any island group has locations
-        has_locations = any(tag.get(ig) for ig in ['Luzon', 'Visayas', 'Mindanao', 'Other'])
-        
-        if has_locations:
+        # Check if there are any locations (new format is a list)
+        if locations and len(locations) > 0:
             rainfall_found = True
             print(f"\n  {rainfall_levels[level]}:")
-            for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
-                locations = tag.get(island_group)
-                if locations:
-                    print(f"    {island_group:12} -> {locations}")
+            print(f"    Locations: {', '.join(locations)}")
+        else:
+            print(f"\n  {rainfall_levels[level]}: No warnings")
     
     if not rainfall_found:
         print("  [OK] No rainfall warnings issued")

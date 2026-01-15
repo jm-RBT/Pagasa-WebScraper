@@ -71,9 +71,7 @@ def continuous_cpu_throttle(process, target_cpu_percent=30, check_interval=0.01)
             self.original_nice = None
             
         def _throttle_loop(self):
-            """Background thread that monitors and signals main thread to pause"""
-            import signal
-            
+            """Background thread that monitors CPU and introduces sleep delays"""
             while self.running:
                 try:
                     cpu = self.process.cpu_percent(interval=0.02)
@@ -85,17 +83,23 @@ def continuous_cpu_throttle(process, target_cpu_percent=30, check_interval=0.01)
                         time.sleep(sleep_time)
                     else:
                         time.sleep(self.interval)
-                except:
+                except Exception:
                     break
                     
         def __enter__(self):
             # Set process to lower priority (nice value)
             # Higher nice value = lower priority
+            # This is Linux/Unix specific and safely ignored on Windows
             try:
-                if sys.platform != 'win32':
-                    self.original_nice = os.nice(0)  # Get current
-                    os.nice(10)  # Increase nice value (lower priority)
-            except:
+                if sys.platform != 'win32' and hasattr(os, 'nice'):
+                    # On Unix/Linux, os.nice() increments the nice value and returns new value
+                    # Store current nice for potential restoration
+                    current_nice = os.nice(0)  # Get current nice value
+                    self.original_nice = current_nice
+                    # Add 10 to nice value (lower priority)
+                    os.nice(10)
+            except (OSError, AttributeError):
+                # Silently continue if nice is not available or permission denied
                 pass
             
             # Start monitoring thread
@@ -109,13 +113,10 @@ def continuous_cpu_throttle(process, target_cpu_percent=30, check_interval=0.01)
             if self.thread:
                 self.thread.join(timeout=0.5)
             
-            # Restore original nice value
-            if self.original_nice is not None:
-                try:
-                    current = os.nice(0)
-                    os.nice(self.original_nice - current)
-                except:
-                    pass
+            # Note: Restoring nice value is tricky because os.nice() is additive
+            # For simplicity and to avoid issues, we skip restoration
+            # The process nice value will remain at the lower priority
+            # This is acceptable as the script typically exits after use
     
     return CPUThrottler(process, target_cpu_percent, check_interval)
 

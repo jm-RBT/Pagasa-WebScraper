@@ -1,7 +1,9 @@
 # PDF Annotation GUI - Implementation Summary
 
+> 📚 **Documentation Index**: See [README.md](README.md) for navigation to all GUI documentation.
+
 ## Overview
-Successfully created a comprehensive PDF annotation GUI tool for the Pagasa-WebScraper project.
+Technical implementation details for the PDF annotation GUI tool.
 
 ## Files Created
 

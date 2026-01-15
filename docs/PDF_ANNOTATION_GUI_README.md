@@ -4,6 +4,8 @@
 
 `pdf_annotation_gui.py` is a graphical user interface tool for annotating PAGASA typhoon bulletin PDFs with extracted JSON data. It provides a split-view interface with a PDF viewer on the left and an editable JSON editor on the right.
 
+> 📚 **Documentation Index**: See [docs/README.md](README.md) for navigation to all GUI documentation.
+
 ## Features
 
 - **Split View Layout**: PDF viewer (left) and JSON editor (right) in a resizable interface
@@ -26,14 +28,15 @@
 All dependencies are in `requirements.txt`:
 - `tkinter` (standard library, included with Python)
 - `pypdfium2` (for PDF rendering)
-- `pdfplumber` (used by extraction module)
+- `pdfplumber` (for PDF text extraction)
 - `pillow` (PIL for image processing)
-- `pandas` (used by extraction module)
-- `torch` and `transformers` (ML components)
+- `pandas` (for data manipulation)
+- `requests` (for URL handling)
+- `beautifulsoup4` (for HTML parsing)
 
 ### System Requirements
 - **Display**: GUI requires a display server (X11, Wayland, or Windows)
-- **Memory**: ~500MB RAM recommended for PDF processing
+- **Memory**: ~200MB RAM recommended for PDF processing (no ML dependencies)
 - **Storage**: Space for annotation files (typically small, <100KB per PDF)
 
 ## Installation
@@ -280,7 +283,7 @@ Run the tool and verify:
 
 - **Single PDF at a time**: Processes one PDF at a time for accuracy
 - **Memory usage**: Large PDFs require more memory
-- **Extraction accuracy**: ML extraction may not be 100% accurate
+- **Extraction accuracy**: Rule-based extraction may not be 100% accurate for non-standard PDF formats
 - **Manual review needed**: Always review and correct extracted data
 
 ## Support

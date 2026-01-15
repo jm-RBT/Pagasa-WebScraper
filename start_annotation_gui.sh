@@ -75,7 +75,7 @@ echo "[4/5] Checking Python dependencies..."
 deps_ok=true
 
 # Check each dependency
-for dep in pdfplumber pandas pillow pypdfium2 torch transformers; do
+for dep in pdfplumber pandas pillow pypdfium2; do
     if python -c "import $dep" 2>/dev/null; then
         echo "   ✓ $dep installed"
     else

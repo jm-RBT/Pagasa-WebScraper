@@ -445,8 +445,7 @@ python pdf_annotation_gui.py
 - Navigation: Previous, Next, Save & Next buttons
 - Saves annotations to `dataset/pdfs_annotation/`
 
-See [docs/PDF_ANNOTATION_GUI_README.md](docs/PDF_ANNOTATION_GUI_README.md) for detailed user guide and features.
-See [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md) for complete visual reference with diagrams.
+See [docs/](docs/) folder for complete GUI documentation. Start with [docs/README.md](docs/README.md).
 
 ---
 
@@ -454,13 +453,24 @@ See [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.m
 
 The project includes comprehensive documentation:
 
+### Core Documentation
 | Document | Purpose |
 |----------|---------|
-| [docs/PDF_ANNOTATION_GUI_README.md](docs/PDF_ANNOTATION_GUI_README.md) | User guide for the PDF annotation GUI tool |
-| [docs/PDF_ANNOTATION_IMPLEMENTATION.md](docs/PDF_ANNOTATION_IMPLEMENTATION.md) | Technical architecture and code metrics for developers |
-| [docs/PDF_ANNOTATION_QUICKREF.md](docs/PDF_ANNOTATION_QUICKREF.md) | Quick reference cheat sheet for GUI controls |
-| [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md) | Comprehensive visual reference with UI diagrams, colors, layouts, and workflows |
-| [docs/PDF_STRUCTURE_ANALYSIS.md](docs/PDF_STRUCTURE_ANALYSIS.md) | Technical analysis of PDF bulletin structure |
+| [README.md](README.md) | Main project documentation (this file) |
+| [INTEGRATION_NOTES.md](INTEGRATION_NOTES.md) | Advisory scraper integration and parallel execution |
+| [PORTABILITY.md](PORTABILITY.md) | Platform compatibility and deployment guide |
+| [PDF_STRUCTURE_ANALYSIS.md](PDF_STRUCTURE_ANALYSIS.md) | Technical analysis of PAGASA PDF bulletin structure |
+
+### PDF Annotation GUI Documentation
+Complete GUI documentation in [docs/](docs/) folder:
+
+| Document | Purpose |
+|----------|---------|
+| [docs/README.md](docs/README.md) | **📂 Documentation index** - Start here |
+| [docs/PDF_ANNOTATION_GUI_README.md](docs/PDF_ANNOTATION_GUI_README.md) | Complete user guide |
+| [docs/PDF_ANNOTATION_QUICKREF.md](docs/PDF_ANNOTATION_QUICKREF.md) | Quick reference card |
+| [docs/GUI_VISUAL_DOCUMENTATION_2025.md](docs/GUI_VISUAL_DOCUMENTATION_2025.md) | Visual reference with diagrams |
+| [docs/PDF_ANNOTATION_IMPLEMENTATION.md](docs/PDF_ANNOTATION_IMPLEMENTATION.md) | Technical implementation details |
 
 ---
 

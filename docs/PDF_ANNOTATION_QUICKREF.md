@@ -1,5 +1,7 @@
 # PDF Annotation GUI - Quick Reference
 
+> 📚 **See also**: [PDF_ANNOTATION_GUI_README.md](PDF_ANNOTATION_GUI_README.md) for complete user guide | [README.md](README.md) for documentation index
+
 ## Starting the Application
 
 ### Windows

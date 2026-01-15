@@ -4,6 +4,8 @@
 **Version:** Current (Active)  
 **Application:** `pdf_annotation_gui.py` (922 lines)
 
+> 📚 **Documentation Index**: See [README.md](README.md) for navigation to all GUI documentation.
+
 ---
 
 ## 1. APPLICATION INTERFACE LAYOUT
@@ -210,7 +212,7 @@ Background: Light (#ecf0f1)
 
 ```
 "Ready - Please select a folder"              → Waiting for folder selection
-"Initializing extractor..."                   → Loading ML models
+"Initializing extractor..."                   → Loading extraction engine
 "Extractor ready"                             → Ready to analyze
 "Loaded X PDFs from folder"                   → PDFs loaded
 "PDF loaded - Click 'Analyze' to extract..."  → Waiting for user action

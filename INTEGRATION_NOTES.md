@@ -1,8 +1,8 @@
-# Advisory Scraper Integration with analyze_pdf.py
+# Advisory Scraper Integration with analyze_pdf.py and main.py
 
 ## Overview
 
-The `advisory_scraper.py` has been successfully integrated with `analyze_pdf.py` to provide live rainfall warning data from PAGASA advisories.
+The `advisory_scraper.py` has been successfully integrated with both `analyze_pdf.py` and `main.py` to provide live rainfall warning data from PAGASA advisories.
 
 ## Changes Made
 
@@ -34,7 +34,7 @@ rainfall_warning_tags3: string[]
 ### 3. Integration Flow
 
 ```
-analyze_pdf.py
+analyze_pdf.py / main.py
     ├── Extract PDF data (typhoon info, signals, rainfall)
     ├── Call advisory_scraper.scrape_and_extract()
     │   ├── Fetch live PAGASA advisory page
@@ -50,6 +50,8 @@ analyze_pdf.py
 
 ## Usage
 
+### Using analyze_pdf.py
+
 The integration is automatic. Simply use `analyze_pdf.py` as before:
 
 ```bash
@@ -58,6 +60,21 @@ python analyze_pdf.py "path/to/bulletin.pdf"
 
 # JSON output
 python analyze_pdf.py "path/to/bulletin.pdf" --json
+```
+
+### Using main.py
+
+The `main.py` script now also integrates advisory data:
+
+```bash
+# Analyze latest bulletin - automatically fetches live advisory data
+python main.py
+
+# With verbose output
+python main.py --verbose
+
+# Save JSON to file
+python main.py > output.json
 ```
 
 ## Example Output
@@ -132,6 +149,7 @@ The PDF-extracted data is automatically converted from the old IslandGroupType f
 ## Files Modified
 
 - `analyze_pdf.py`: Added advisory integration and new display format
+- `main.py`: Added advisory integration and updated JSON output format
 - `typhoonhubType.ts`: Already updated to expect `string[]` format (done previously)
 
 ## Files Unchanged

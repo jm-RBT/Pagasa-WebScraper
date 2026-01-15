@@ -148,7 +148,20 @@ def fetch_live_advisory_data(verbose=False):
     try:
         if verbose:
             print("[INFO] Fetching live rainfall advisory from PAGASA...", file=sys.stderr)
-        result = scrape_and_extract()
+        
+        # Suppress advisory_scraper output when not verbose
+        if not verbose:
+            # Redirect stdout to devnull to suppress advisory_scraper prints
+            import os
+            old_stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            try:
+                result = scrape_and_extract()
+            finally:
+                sys.stdout.close()
+                sys.stdout = old_stdout
+        else:
+            result = scrape_and_extract()
         
         if result and 'rainfall_warnings' in result:
             warnings = result['rainfall_warnings']

@@ -322,7 +322,7 @@ def main():
         
         # Fetch live advisory data and merge with PDF extraction results
         advisory_data = fetch_live_advisory_data()
-        if advisory_data:
+        if advisory_data and any(len(advisory_data.get(level, [])) > 0 for level in ['red', 'orange', 'yellow']):
             # Replace rainfall warnings with live advisory data
             # Map: red -> rainfall_warning_tags1, orange -> rainfall_warning_tags2, yellow -> rainfall_warning_tags3
             data['rainfall_warning_tags1'] = advisory_data.get('red', [])
@@ -330,8 +330,8 @@ def main():
             data['rainfall_warning_tags3'] = advisory_data.get('yellow', [])
             print("[INFO] Replaced rainfall warnings with live advisory data")
         else:
-            # If advisory fetch fails, convert existing IslandGroupType format to list format
-            print("[INFO] Using PDF-extracted rainfall data (advisory fetch failed)")
+            # If advisory fetch fails or returns empty data, convert existing IslandGroupType format to list format
+            print("[INFO] Using PDF-extracted rainfall data (advisory fetch failed or returned no data)")
             for level in range(1, 4):
                 tag_key = f'rainfall_warning_tags{level}'
                 old_format = data.get(tag_key, {})

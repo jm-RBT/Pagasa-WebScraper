@@ -43,7 +43,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from contextlib import contextmanager
 from advisory_scraper import scrape_and_extract
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 
 @contextmanager
@@ -268,16 +268,12 @@ def analyze_pdf_and_advisory_parallel(pdf_url_or_path, low_cpu_mode=False, verbo
         pdf_future = executor.submit(analyze_pdf, pdf_url_or_path, low_cpu_mode, verbose)
         advisory_future = executor.submit(fetch_live_advisory_data, verbose)
         
-        # Wait for both to complete
-        for future in as_completed([pdf_future, advisory_future]):
-            if future == pdf_future:
-                pdf_data = future.result()
-                if verbose:
-                    print("[INFO] PDF analysis completed", file=sys.stderr)
-            elif future == advisory_future:
-                advisory_data = future.result()
-                if verbose:
-                    print("[INFO] Advisory scraping completed", file=sys.stderr)
+        # Wait for both to complete (blocks until both are done)
+        pdf_data = pdf_future.result()
+        advisory_data = advisory_future.result()
+        
+        if verbose:
+            print("[INFO] Both tasks completed", file=sys.stderr)
     
     # Check if PDF analysis succeeded
     if not pdf_data:

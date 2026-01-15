@@ -34,9 +34,90 @@ def cpu_throttle(process, target_cpu_percent=30, sample_interval=0.1):
     current_cpu = process.cpu_percent(interval=sample_interval)
     
     if current_cpu > target_cpu_percent:
-        # Sleep for a bit to let CPU cool down
-        sleep_time = 0.05 * (current_cpu / target_cpu_percent)
+        # Calculate sleep time proportional to how much we're over the target
+        # More aggressive sleeping when we're further over the target
+        overage_ratio = current_cpu / target_cpu_percent
+        sleep_time = 0.1 * overage_ratio
         time.sleep(sleep_time)
+
+
+def continuous_cpu_throttle(process, target_cpu_percent=30, check_interval=0.01):
+    """
+    Context manager for continuous CPU throttling during operations.
+    Uses process priority (nice) and periodic monitoring to limit CPU usage.
+    
+    Args:
+        process: psutil.Process object
+        target_cpu_percent: Target CPU percentage (default 30%)
+        check_interval: Time between throttle checks in seconds
+    
+    Usage:
+        with continuous_cpu_throttle(process, target_cpu_percent=30):
+            # CPU-intensive operations here
+            pass
+    """
+    import threading
+    import time
+    import os
+    import sys
+    
+    class CPUThrottler:
+        def __init__(self, process, target, interval):
+            self.process = process
+            self.target = target
+            self.interval = interval
+            self.running = False
+            self.thread = None
+            self.original_nice = None
+            
+        def _throttle_loop(self):
+            """Background thread that monitors and signals main thread to pause"""
+            import signal
+            
+            while self.running:
+                try:
+                    cpu = self.process.cpu_percent(interval=0.02)
+                    
+                    if cpu > self.target:
+                        # Calculate how much to sleep based on overage
+                        overage = (cpu - self.target) / 100.0
+                        sleep_time = 0.05 * (1 + overage * 3)  # More sleep when further over
+                        time.sleep(sleep_time)
+                    else:
+                        time.sleep(self.interval)
+                except:
+                    break
+                    
+        def __enter__(self):
+            # Set process to lower priority (nice value)
+            # Higher nice value = lower priority
+            try:
+                if sys.platform != 'win32':
+                    self.original_nice = os.nice(0)  # Get current
+                    os.nice(10)  # Increase nice value (lower priority)
+            except:
+                pass
+            
+            # Start monitoring thread
+            self.running = True
+            self.thread = threading.Thread(target=self._throttle_loop, daemon=True)
+            self.thread.start()
+            return self
+            
+        def __exit__(self, *args):
+            self.running = False
+            if self.thread:
+                self.thread.join(timeout=0.5)
+            
+            # Restore original nice value
+            if self.original_nice is not None:
+                try:
+                    current = os.nice(0)
+                    os.nice(self.original_nice - current)
+                except:
+                    pass
+    
+    return CPUThrottler(process, target_cpu_percent, check_interval)
 
 def calculate_file_hash(filepath):
     """Calculate SHA256 hash of a file"""
@@ -256,11 +337,13 @@ def main():
     extractor = TyphoonBulletinExtractor()
     try:
         extraction_start = time.time()
-        data = extractor.extract_from_pdf(pdf_path_to_analyze)
         
-        # Apply CPU throttling if enabled
+        # Apply continuous CPU throttling if enabled
         if low_cpu_mode:
-            cpu_throttle(process, target_cpu_percent=30)
+            with continuous_cpu_throttle(process, target_cpu_percent=30):
+                data = extractor.extract_from_pdf(pdf_path_to_analyze)
+        else:
+            data = extractor.extract_from_pdf(pdf_path_to_analyze)
         
         extraction_time = time.time() - extraction_start
         

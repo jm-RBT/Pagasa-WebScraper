@@ -230,12 +230,13 @@ def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
     process = psutil.Process(os.getpid())
     
     try:
-        data = extractor.extract_from_pdf(pdf_path)
-        
-        # Apply CPU throttling if enabled
+        # Apply continuous CPU throttling if enabled
         if low_cpu_mode:
-            from analyze_pdf import cpu_throttle
-            cpu_throttle(process, target_cpu_percent=30)
+            from analyze_pdf import continuous_cpu_throttle
+            with continuous_cpu_throttle(process, target_cpu_percent=30):
+                data = extractor.extract_from_pdf(pdf_path)
+        else:
+            data = extractor.extract_from_pdf(pdf_path)
         
         return data
     except Exception as e:

@@ -1070,7 +1070,6 @@ class TyphoonBulletinExtractor:
         self.location_matcher = LocationMatcher()
         self.datetime_extractor = DateTimeExtractor()
         self.signal_extractor = SignalWarningExtractor(self.location_matcher)
-        self.rainfall_extractor = RainfallWarningExtractor(self.location_matcher)
     
     def extract_from_pdf(self, pdf_path: str) -> Dict:
         """Extract complete TyphoonHubType data from PDF"""
@@ -1090,7 +1089,6 @@ class TyphoonBulletinExtractor:
         typhoon_windspeed = self._extract_typhoon_windspeed(full_text)
         
         signals_by_level = self.signal_extractor.extract_signals(full_text, pdf_path=pdf_path)
-        rainfall_by_level = self.rainfall_extractor.extract_rainfall_warnings(full_text)
         
         # Build result structure
         result = {
@@ -1103,9 +1101,6 @@ class TyphoonBulletinExtractor:
             'signal_warning_tags3': self._build_island_group_dict(signals_by_level, 3),
             'signal_warning_tags4': self._build_island_group_dict(signals_by_level, 4),
             'signal_warning_tags5': self._build_island_group_dict(signals_by_level, 5),
-            'rainfall_warning_tags1': self._build_island_group_dict(rainfall_by_level, 1),
-            'rainfall_warning_tags2': self._build_island_group_dict(rainfall_by_level, 2),
-            'rainfall_warning_tags3': self._build_island_group_dict(rainfall_by_level, 3),
         }
         
         return result

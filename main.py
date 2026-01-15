@@ -42,6 +42,8 @@ import tempfile
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 from contextlib import contextmanager
+from advisory_scraper import scrape_and_extract
+from concurrent.futures import ThreadPoolExecutor
 
 
 @contextmanager
@@ -137,6 +139,48 @@ def get_latest_pdf(pdf_urls):
     return pdf_urls[-1]
 
 
+def fetch_live_advisory_data(verbose=False):
+    """
+    Fetch live rainfall advisory data from PAGASA.
+    Returns dict with keys: red, orange, yellow (each containing list of locations)
+    Returns None if fetch fails.
+    """
+    try:
+        if verbose:
+            print("[INFO] Fetching live rainfall advisory from PAGASA...", file=sys.stderr)
+        
+        # Suppress advisory_scraper output when not verbose
+        if not verbose:
+            # Redirect stdout to devnull to suppress advisory_scraper prints
+            import os
+            old_stdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            try:
+                result = scrape_and_extract()
+            finally:
+                sys.stdout.close()
+                sys.stdout = old_stdout
+        else:
+            result = scrape_and_extract()
+        
+        if result and 'rainfall_warnings' in result:
+            warnings = result['rainfall_warnings']
+            if verbose:
+                print(f"[INFO] Successfully fetched advisory data:", file=sys.stderr)
+                print(f"  - Red warnings: {len(warnings.get('red', []))} locations", file=sys.stderr)
+                print(f"  - Orange warnings: {len(warnings.get('orange', []))} locations", file=sys.stderr)
+                print(f"  - Yellow warnings: {len(warnings.get('yellow', []))} locations", file=sys.stderr)
+            return warnings
+        else:
+            if verbose:
+                print("[WARNING] Advisory data fetch returned no warnings", file=sys.stderr)
+            return None
+    except Exception as e:
+        if verbose:
+            print(f"[WARNING] Failed to fetch advisory data: {e}", file=sys.stderr)
+        return None
+
+
 
 
 def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
@@ -186,12 +230,13 @@ def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
     process = psutil.Process(os.getpid())
     
     try:
-        data = extractor.extract_from_pdf(pdf_path)
-        
-        # Apply CPU throttling if enabled
+        # Apply continuous CPU throttling if enabled
         if low_cpu_mode:
-            from analyze_pdf import cpu_throttle
-            cpu_throttle(process, target_cpu_percent=30)
+            from analyze_pdf import continuous_cpu_throttle
+            with continuous_cpu_throttle(process, target_cpu_percent=30):
+                data = extractor.extract_from_pdf(pdf_path)
+        else:
+            data = extractor.extract_from_pdf(pdf_path)
         
         return data
     except Exception as e:
@@ -211,6 +256,63 @@ def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
             except Exception as e:
                 if verbose:
                     print(f"  Warning: Could not delete temp file: {e}", file=sys.stderr)
+
+
+def analyze_pdf_and_advisory_parallel(pdf_url_or_path, low_cpu_mode=False, verbose=False):
+    """
+    Run PDF analysis and advisory scraping in parallel for better performance.
+    
+    Args:
+        pdf_url_or_path: URL or local path to PDF file
+        low_cpu_mode: Whether to limit CPU usage
+        verbose: Whether to show progress
+        
+    Returns:
+        Dictionary of extracted data with merged rainfall warnings, or None on failure
+    """
+    if verbose:
+        print("[INFO] Starting parallel execution of PDF analysis and advisory scraping...", file=sys.stderr)
+    
+    pdf_data = None
+    advisory_data = None
+    
+    # Use ThreadPoolExecutor for I/O bound operations
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Submit both tasks
+        pdf_future = executor.submit(analyze_pdf, pdf_url_or_path, low_cpu_mode, verbose)
+        advisory_future = executor.submit(fetch_live_advisory_data, verbose)
+        
+        # Wait for both to complete (blocks until both are done)
+        pdf_data = pdf_future.result()
+        advisory_data = advisory_future.result()
+        
+        if verbose:
+            print("[INFO] Both tasks completed", file=sys.stderr)
+    
+    # Check if PDF analysis succeeded
+    if not pdf_data:
+        if verbose:
+            print("[ERROR] PDF analysis failed", file=sys.stderr)
+        return None
+    
+    # Merge advisory data with PDF extraction results
+    if advisory_data and any(advisory_data.get(level, []) for level in ['red', 'orange', 'yellow']):
+        # Add rainfall warnings from live advisory data
+        # Map: red -> rainfall_warning_tags1, orange -> rainfall_warning_tags2, yellow -> rainfall_warning_tags3
+        pdf_data['rainfall_warning_tags1'] = advisory_data.get('red', [])
+        pdf_data['rainfall_warning_tags2'] = advisory_data.get('orange', [])
+        pdf_data['rainfall_warning_tags3'] = advisory_data.get('yellow', [])
+        if verbose:
+            print("[INFO] Added live advisory data to PDF extraction", file=sys.stderr)
+    else:
+        # If advisory fetch fails or returns empty data, set empty rainfall warnings
+        if verbose:
+            print("[INFO] No advisory data available, rainfall warnings will be empty", file=sys.stderr)
+        pdf_data['rainfall_warning_tags1'] = []
+        pdf_data['rainfall_warning_tags2'] = []
+        pdf_data['rainfall_warning_tags3'] = []
+    
+    return pdf_data
 
 
 def display_results(typhoon_name, data):
@@ -252,25 +354,22 @@ def display_results(typhoon_name, data):
     rainfall_found = False
     
     rainfall_levels = {
-        1: "Level 1 - Intense Rainfall (>30mm/hr, RED)",
-        2: "Level 2 - Heavy Rainfall (15-30mm/hr, ORANGE)",
-        3: "Level 3 - Heavy Rainfall Advisory (7.5-15mm/hr, YELLOW)"
+        1: "Red Warning - Intense Rainfall (>200mm/24hr)",
+        2: "Orange Warning - Heavy Rainfall (100-200mm/24hr)",
+        3: "Yellow Warning - Moderate Rainfall (50-100mm/24hr)"
     }
     
     for level in range(1, 4):
         tag_key = f'rainfall_warning_tags{level}'
-        tag = data.get(tag_key, {})
+        locations = data.get(tag_key, [])
         
-        # Check if any island group has locations
-        has_locations = any(tag.get(ig) for ig in ['Luzon', 'Visayas', 'Mindanao', 'Other'])
-        
-        if has_locations:
+        # Check if there are any locations (new format is a list)
+        if locations and len(locations) > 0:
             rainfall_found = True
             print(f"\n  {rainfall_levels[level]}:")
-            for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
-                locations = tag.get(island_group)
-                if locations:
-                    print(f"    {island_group:12} -> {locations}")
+            print(f"    Locations: {', '.join(locations)}")
+        else:
+            print(f"\n  {rainfall_levels[level]}: No warnings")
     
     if not rainfall_found:
         print("  [OK] No rainfall warnings issued")
@@ -349,12 +448,12 @@ def main():
             print(f"  Typhoon: {typhoon_name}", file=sys.stderr)
             print(f"  Latest bulletin: {latest_pdf}", file=sys.stderr)
         
-        # Step 3: Analyze the PDF (downloads automatically if URL)
+        # Step 3: Analyze the PDF and fetch advisory data in parallel
         if verbose:
-            print("\n[STEP 3] Analyzing PDF...", file=sys.stderr)
+            print("\n[STEP 3] Analyzing PDF and fetching advisory data (parallel)...", file=sys.stderr)
             print("-" * 80, file=sys.stderr)
         
-        data = analyze_pdf(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
+        data = analyze_pdf_and_advisory_parallel(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
         
         if not data:
             if verbose:

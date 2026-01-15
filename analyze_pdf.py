@@ -34,9 +34,91 @@ def cpu_throttle(process, target_cpu_percent=30, sample_interval=0.1):
     current_cpu = process.cpu_percent(interval=sample_interval)
     
     if current_cpu > target_cpu_percent:
-        # Sleep for a bit to let CPU cool down
-        sleep_time = 0.05 * (current_cpu / target_cpu_percent)
+        # Calculate sleep time proportional to how much we're over the target
+        # More aggressive sleeping when we're further over the target
+        overage_ratio = current_cpu / target_cpu_percent
+        sleep_time = 0.1 * overage_ratio
         time.sleep(sleep_time)
+
+
+def continuous_cpu_throttle(process, target_cpu_percent=30, check_interval=0.01):
+    """
+    Context manager for continuous CPU throttling during operations.
+    Uses process priority (nice) and periodic monitoring to limit CPU usage.
+    
+    Args:
+        process: psutil.Process object
+        target_cpu_percent: Target CPU percentage (default 30%)
+        check_interval: Time between throttle checks in seconds
+    
+    Usage:
+        with continuous_cpu_throttle(process, target_cpu_percent=30):
+            # CPU-intensive operations here
+            pass
+    """
+    import threading
+    import time
+    import os
+    import sys
+    
+    class CPUThrottler:
+        def __init__(self, process, target, interval):
+            self.process = process
+            self.target = target
+            self.interval = interval
+            self.running = False
+            self.thread = None
+            self.original_nice = None
+            
+        def _throttle_loop(self):
+            """Background thread that monitors CPU and introduces sleep delays"""
+            while self.running:
+                try:
+                    cpu = self.process.cpu_percent(interval=0.02)
+                    
+                    if cpu > self.target:
+                        # Calculate how much to sleep based on overage
+                        overage = (cpu - self.target) / 100.0
+                        sleep_time = 0.05 * (1 + overage * 3)  # More sleep when further over
+                        time.sleep(sleep_time)
+                    else:
+                        time.sleep(self.interval)
+                except Exception:
+                    break
+                    
+        def __enter__(self):
+            # Set process to lower priority (nice value)
+            # Higher nice value = lower priority
+            # This is Linux/Unix specific and safely ignored on Windows
+            try:
+                if sys.platform != 'win32' and hasattr(os, 'nice'):
+                    # On Unix/Linux, os.nice() increments the nice value and returns new value
+                    # Store current nice for potential restoration
+                    current_nice = os.nice(0)  # Get current nice value
+                    self.original_nice = current_nice
+                    # Add 10 to nice value (lower priority)
+                    os.nice(10)
+            except (OSError, AttributeError):
+                # Silently continue if nice is not available or permission denied
+                pass
+            
+            # Start monitoring thread
+            self.running = True
+            self.thread = threading.Thread(target=self._throttle_loop, daemon=True)
+            self.thread.start()
+            return self
+            
+        def __exit__(self, *args):
+            self.running = False
+            if self.thread:
+                self.thread.join(timeout=0.5)
+            
+            # Note: Restoring nice value is tricky because os.nice() is additive
+            # For simplicity and to avoid issues, we skip restoration
+            # The process nice value will remain at the lower priority
+            # This is acceptable as the script typically exits after use
+    
+    return CPUThrottler(process, target_cpu_percent, check_interval)
 
 def calculate_file_hash(filepath):
     """Calculate SHA256 hash of a file"""
@@ -167,36 +249,6 @@ def display_results(data):
     if not signal_found:
         print("  [OK] No tropical cyclone wind signals in effect")
     
-    # Rainfall Warnings
-    print("\n[RAINFALL WARNINGS]")
-    rainfall_found = False
-    
-    rainfall_levels = {
-        1: "Level 1 - Intense Rainfall (>30mm/hr, RED)",
-        2: "Level 2 - Heavy Rainfall (15-30mm/hr, ORANGE)",
-        3: "Level 3 - Heavy Rainfall Advisory (7.5-15mm/hr, YELLOW)"
-    }
-    
-    for level in range(1, 4):
-        tag_key = f'rainfall_warning_tags{level}'
-        tag = data.get(tag_key, {})
-        
-        # Check if any island group has locations
-        has_locations = any(tag.get(ig) for ig in ['Luzon', 'Visayas', 'Mindanao', 'Other'])
-        
-        if has_locations:
-            rainfall_found = True
-            print(f"\n  {rainfall_levels[level]}:")
-            for island_group in ['Luzon', 'Visayas', 'Mindanao', 'Other']:
-                locations = tag.get(island_group)
-                if locations:
-                    print(f"    {island_group:12} -> {locations}")
-        else:
-            print(f"\n  {rainfall_levels[level]}: No warnings")
-    
-    if not rainfall_found:
-        print("  [OK] No rainfall warnings issued")
-    
     print("\n" + "=" * 80 + "\n")
 
 def main():
@@ -286,11 +338,13 @@ def main():
     extractor = TyphoonBulletinExtractor()
     try:
         extraction_start = time.time()
-        data = extractor.extract_from_pdf(pdf_path_to_analyze)
         
-        # Apply CPU throttling if enabled
+        # Apply continuous CPU throttling if enabled
         if low_cpu_mode:
-            cpu_throttle(process, target_cpu_percent=30)
+            with continuous_cpu_throttle(process, target_cpu_percent=30):
+                data = extractor.extract_from_pdf(pdf_path_to_analyze)
+        else:
+            data = extractor.extract_from_pdf(pdf_path_to_analyze)
         
         extraction_time = time.time() - extraction_start
         

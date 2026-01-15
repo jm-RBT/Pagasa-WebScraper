@@ -15,7 +15,7 @@ type TyphoonHubType = {
     signal_warning_tags3: IslandGroupType,
     signal_warning_tags4: IslandGroupType,
     signal_warning_tags5: IslandGroupType,
-    rainfall_warning_tags1: IslandGroupType,
-    rainfall_warning_tags2: IslandGroupType,
-    rainfall_warning_tags3: IslandGroupType,
+    rainfall_warning_tags1: string[],
+    rainfall_warning_tags2: string[],
+    rainfall_warning_tags3: string[],
 }

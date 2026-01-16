@@ -23,7 +23,6 @@ print(result['data'])
 ```
 
 📖 **See**: [`modular/README.md`](modular/README.md) for complete documentation  
-📖 **See**: [`MODULAR_IMPLEMENTATION.md`](MODULAR_IMPLEMENTATION.md) for implementation details  
 🚀 **Try**: `python quick_start.py` for a quick demo
 
 ---

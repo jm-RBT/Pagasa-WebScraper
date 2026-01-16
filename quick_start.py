@@ -45,16 +45,9 @@ def main():
     print(f"  Wind Speed: {data.get('typhoon_windspeed', 'N/A')}")
     print(f"  Movement: {data.get('typhoon_movement', 'N/A')}")
     
-    # Save to JSON file
-    output_file = "typhoon_data.json"
-    with open(output_file, "w") as f:
-        json.dump(result, f, indent=2)
-    
-    print(f"\n[SAVED] Data written to: {output_file}")
-    print("\nYou can now:")
-    print("  - View the JSON file: cat typhoon_data.json")
-    print("  - Parse with jq: cat typhoon_data.json | jq '.data.typhoon_windspeed'")
-    print("  - Import in Python: json.load(open('typhoon_data.json'))")
+    # Display JSON output
+    print("\nJSON Output:")
+    print(json.dumps(result, indent=2))
     
     return 0
 

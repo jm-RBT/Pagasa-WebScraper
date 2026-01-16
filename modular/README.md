@@ -49,15 +49,6 @@ result = get_pagasa_data(source="path/to/bulletin.html")
 result = get_pagasa_data(source="https://example.com/bulletin")
 ```
 
-### Low CPU Mode
-
-```python
-from modular.main import get_pagasa_data
-
-# Enable low CPU mode to limit CPU usage to ~30%
-result = get_pagasa_data(low_cpu_mode=True)
-```
-
 ## Individual Module Usage
 
 ### PDF Analysis Only
@@ -70,9 +61,6 @@ data = analyze_pdf("path/to/bulletin.pdf")
 
 # Analyze a PDF from URL
 data = analyze_pdf("https://example.com/bulletin.pdf")
-
-# With low CPU mode
-data = analyze_pdf("path/to/bulletin.pdf", low_cpu_mode=True)
 ```
 
 ### Bulletin Scraping Only
@@ -192,7 +180,7 @@ modular/
 When integrating this modular package into another system, you only need to copy:
 
 1. **The entire `modular/` directory** - Contains all the library code
-2. **The `bin/consolidated_locations.csv` file** - Required for location validation (26,808 Philippine locations)
+2. **Place `consolidated_locations.csv` in the `modular/` directory** - Required for location validation (26,808 Philippine locations)
 
 **Directory structure in your project:**
 ```
@@ -203,16 +191,16 @@ your_project/
 │   ├── scrape_bulletin.py
 │   ├── advisory_scraper.py
 │   ├── analyze_pdf.py
-│   └── typhoon_extraction.py
-└── bin/
-    └── consolidated_locations.csv  # Copy this file
+│   ├── typhoon_extraction.py
+│   └── consolidated_locations.csv  # Place CSV file here
 ```
 
 **Note**: You do NOT need to copy:
 - Test files (test_*.py)
-- Example files (example_*.py)
-- Any HTML files from the bin/ directory
+- Example files (example_*.py, quick_start.py)
+- Any HTML files
 - The original CLI scripts from the root directory
+- The bin/ directory structure
 
 The modular package uses the live PAGASA URL by default, so no local HTML files are required.
 

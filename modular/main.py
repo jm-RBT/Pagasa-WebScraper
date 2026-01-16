@@ -118,13 +118,12 @@ def fetch_live_advisory_data():
         return None
 
 
-def analyze_pdf_and_advisory_parallel(pdf_url_or_path, low_cpu_mode=False):
+def analyze_pdf_and_advisory_parallel(pdf_url_or_path):
     """
     Run PDF analysis and advisory scraping in parallel for better performance.
     
     Args:
         pdf_url_or_path: URL or local path to PDF file
-        low_cpu_mode: Whether to limit CPU usage
         
     Returns:
         Dictionary of extracted data with merged rainfall warnings, or None on failure
@@ -135,7 +134,7 @@ def analyze_pdf_and_advisory_parallel(pdf_url_or_path, low_cpu_mode=False):
     # Use ThreadPoolExecutor for I/O bound operations
     with ThreadPoolExecutor(max_workers=2) as executor:
         # Submit both tasks
-        pdf_future = executor.submit(analyze_pdf, pdf_url_or_path, low_cpu_mode)
+        pdf_future = executor.submit(analyze_pdf, pdf_url_or_path)
         advisory_future = executor.submit(fetch_live_advisory_data)
         
         # Wait for both to complete
@@ -162,14 +161,13 @@ def analyze_pdf_and_advisory_parallel(pdf_url_or_path, low_cpu_mode=False):
     return pdf_data
 
 
-def get_pagasa_data(source=None, low_cpu_mode=False):
+def get_pagasa_data(source=None):
     """
     Main function to get PAGASA typhoon bulletin data.
     
     Args:
         source: Optional file path or URL to HTML content. 
                 If None, uses live PAGASA URL
-        low_cpu_mode: Whether to limit CPU usage during PDF processing
         
     Returns:
         Dictionary with structure:
@@ -184,7 +182,7 @@ def get_pagasa_data(source=None, low_cpu_mode=False):
     """
     # Default to live PAGASA URL
     if source is None:
-        source = "https://www.pagasa.dost.gov.ph/weather/tropical-cyclone-bulletin"
+        source = "https://www.pagasa.dost.gov.ph/tropical-cyclone/severe-weather-bulletin"
     
     try:
         # Step 1: Extract typhoon names and PDF links
@@ -203,7 +201,7 @@ def get_pagasa_data(source=None, low_cpu_mode=False):
             return None
         
         # Step 3: Analyze the PDF and fetch advisory data in parallel
-        data = analyze_pdf_and_advisory_parallel(latest_pdf, low_cpu_mode=low_cpu_mode)
+        data = analyze_pdf_and_advisory_parallel(latest_pdf)
         
         if not data:
             print("[ERROR] Failed to extract data from PDF", file=sys.stderr)

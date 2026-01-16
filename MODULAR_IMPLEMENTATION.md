@@ -123,9 +123,6 @@ result = get_pagasa_data(source="local_bulletin.html")
 
 # Use custom URL
 result = get_pagasa_data(source="https://example.com/bulletin")
-
-# Enable low CPU mode
-result = get_pagasa_data(low_cpu_mode=True)
 ```
 
 ## Output Format
@@ -217,18 +214,19 @@ from modular.scrape_bulletin import scrape_bulletin
 To use the modular package in your project:
 
 1. **Copy the `modular/` directory** to your project (entire directory)
-2. **Copy `bin/consolidated_locations.csv`** file to `bin/` in your project
+2. **Place `consolidated_locations.csv` in the `modular/` directory** - Required for location validation
 3. Import and use: `from modular import get_pagasa_data`
 4. Call the function: `result = get_pagasa_data()`
 
-**Important**: You only need these two items:
+**Important**: You only need:
 - The `modular/` directory (all .py files)
-- The `bin/consolidated_locations.csv` file
+- The `consolidated_locations.csv` file placed inside `modular/`
 
 You do NOT need:
 - Test scripts (test_*.py)
-- Example scripts (example_*.py)
-- HTML files from bin/PAGASA BULLETIN PAGE/
+- Example scripts (example_*.py, quick_start.py)
+- HTML files
+- The bin/ directory structure
 - Original CLI scripts
 
 The package fetches data from live PAGASA URLs, so no local HTML files are needed.

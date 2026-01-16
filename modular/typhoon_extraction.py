@@ -42,8 +42,11 @@ class LocationMatcher:
         'CAR': 'Luzon',
     }
     
-    def __init__(self, consolidated_csv_path: str = "bin/consolidated_locations.csv"):
+    def __init__(self, consolidated_csv_path: str = None):
         """Load consolidated locations mapping"""
+        if consolidated_csv_path is None:
+            # Default to consolidated_locations.csv in the same directory as this module
+            consolidated_csv_path = str(Path(__file__).parent / "consolidated_locations.csv")
         self.locations_df = pd.read_csv(consolidated_csv_path)
         
         self.priority = {'Province': 5, 'Region': 4, 'City': 3, 'Municipality': 2, 'Barangay': 1}

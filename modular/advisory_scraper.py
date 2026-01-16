@@ -46,7 +46,7 @@ import tempfile
 
 # Configuration
 TARGET_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
-CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent.parent / "bin" / "consolidated_locations.csv"
+CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent / "consolidated_locations.csv"
 # Use system temp directory for temporary PDF storage
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "pagasa_advisory_temp"
 

@@ -2,6 +2,31 @@
 
 High-accuracy PAGASA typhoon bulletin PDF extraction and annotation tool. Extracts signal warnings, rainfall alerts, typhoon location, movement, and wind speed with 94.2% accuracy.
 
+## 🆕 Modular Package (Recommended for Integration)
+
+**NEW**: A modular, reusable library version is now available in the `modular/` directory!
+
+Perfect for integrating into other systems:
+- ✅ Pure Python library (no CLI)
+- ✅ Returns JSON-ready data
+- ✅ Silent operation (errors only)
+- ✅ Single function API
+- ✅ Easy to import and use
+
+**Quick Example:**
+```python
+from modular import get_pagasa_data
+
+result = get_pagasa_data()
+print(result['typhoon_name'])
+print(result['data'])
+```
+
+📖 **See**: [`modular/README.md`](modular/README.md) for complete documentation  
+🚀 **Try**: `python quick_start.py` for a quick demo
+
+---
+
 ## Quick Start
 
 ### 1. Setup Virtual Environment (REQUIRED)

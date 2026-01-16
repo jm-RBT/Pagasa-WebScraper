@@ -20,16 +20,9 @@ def example_full_pipeline():
     print("Example 1: Full Pipeline")
     print("=" * 80)
     
-    # Note: This requires internet access to PAGASA website
-    # For testing, you can use a local HTML file
-    html_file = "bin/PAGASA BULLETIN PAGE/PAGASA.html"
-    
-    if Path(html_file).exists():
-        print(f"Using local file: {html_file}")
-        result = get_pagasa_data(source=html_file)
-    else:
-        print("Using live PAGASA URL")
-        result = get_pagasa_data()
+    # Use live PAGASA URL (requires internet)
+    print("Fetching from live PAGASA URL (requires internet)...")
+    result = get_pagasa_data()
     
     if result:
         print(f"\n✓ Successfully retrieved data for: {result['typhoon_name']}")
@@ -74,12 +67,13 @@ def example_bulletin_scraping():
     print("\n\nExample 3: Bulletin Scraping Only")
     print("=" * 80)
     
-    html_file = "bin/PAGASA BULLETIN PAGE/PAGASA.html"
+    url = "https://www.pagasa.dost.gov.ph/weather/tropical-cyclone-bulletin"
     
-    if Path(html_file).exists():
-        print(f"Scraping: {html_file}")
-        
-        pdf_links = scrape_bulletin(html_file)
+    print(f"Scraping from live URL (requires internet)...")
+    print(f"URL: {url}")
+    
+    try:
+        pdf_links = scrape_bulletin(url)
         
         if pdf_links:
             print(f"\n✓ Found {len(pdf_links)} typhoon(s)")
@@ -90,8 +84,9 @@ def example_bulletin_scraping():
                     print(f"    Latest: {typhoon_pdfs[-1][:80]}...")
         else:
             print("\n✗ No typhoons found")
-    else:
-        print(f"HTML file not found: {html_file}")
+    except Exception as e:
+        print(f"\n✗ Error: {e}")
+        print("Note: This example requires an active internet connection")
 
 
 def main():
@@ -101,9 +96,15 @@ def main():
     print("="*80 + "\n")
     
     try:
-        example_bulletin_scraping()
         example_pdf_analysis()
-        # Uncomment to test full pipeline (requires internet or local HTML with accessible PDFs)
+        
+        # Note: The following examples require internet connection
+        print("\n" + "="*80)
+        print("NOTE: The following examples require an active internet connection")
+        print("="*80)
+        
+        # Uncomment to test these examples with internet access:
+        # example_bulletin_scraping()
         # example_full_pipeline()
         
         print("\n\n" + "="*80)

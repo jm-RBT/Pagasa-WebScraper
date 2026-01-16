@@ -216,8 +216,22 @@ from modular.scrape_bulletin import scrape_bulletin
 
 To use the modular package in your project:
 
-1. Copy the `modular/` directory to your project
-2. Ensure `bin/consolidated_locations.csv` is accessible
+1. **Copy the `modular/` directory** to your project (entire directory)
+2. **Copy `bin/consolidated_locations.csv`** file to `bin/` in your project
+3. Import and use: `from modular import get_pagasa_data`
+4. Call the function: `result = get_pagasa_data()`
+
+**Important**: You only need these two items:
+- The `modular/` directory (all .py files)
+- The `bin/consolidated_locations.csv` file
+
+You do NOT need:
+- Test scripts (test_*.py)
+- Example scripts (example_*.py)
+- HTML files from bin/PAGASA BULLETIN PAGE/
+- Original CLI scripts
+
+The package fetches data from live PAGASA URLs, so no local HTML files are needed.
 3. Import and use: `from modular import get_pagasa_data`
 4. Handle the returned dictionary as needed
 

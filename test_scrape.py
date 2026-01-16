@@ -16,16 +16,15 @@ def test_scrape():
     print("Testing modular PAGASA bulletin scraper...")
     print("=" * 80)
     
-    html_file = "bin/PAGASA BULLETIN PAGE/PAGASA.html"
+    # Use live PAGASA URL
+    url = "https://www.pagasa.dost.gov.ph/weather/tropical-cyclone-bulletin"
     
-    if not Path(html_file).exists():
-        print(f"[ERROR] Test file not found: {html_file}")
-        return False
-    
-    print(f"\n[TEST] Scraping: {html_file}")
+    print(f"\n[TEST] Scraping from live URL (requires internet)")
+    print(f"[TEST] URL: {url}")
+    print("Note: This test requires an active internet connection")
     
     try:
-        result = scrape_bulletin(html_file)
+        result = scrape_bulletin(url)
         
         if not result:
             print("\n[FAIL] scrape_bulletin() returned empty result")

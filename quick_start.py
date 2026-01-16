@@ -21,22 +21,17 @@ def main():
     print("Quick Start: Getting PAGASA Typhoon Data")
     print("=" * 80)
     
-    # Option 1: Use live PAGASA URL (requires internet)
-    # result = get_pagasa_data()
-    
-    # Option 2: Use local HTML file (for testing offline)
-    html_file = "bin/PAGASA BULLETIN PAGE/PAGASA.html"
-    if Path(html_file).exists():
-        print(f"Using local file: {html_file}")
-        result = get_pagasa_data(source=html_file)
-    else:
-        print("Using live PAGASA URL")
-        result = get_pagasa_data()
+    # Use live PAGASA URL (default behavior)
+    print("Fetching data from live PAGASA URL...")
+    print("Note: This requires an active internet connection")
+    result = get_pagasa_data()
     
     # Check if data was retrieved
     if result is None:
         print("\n[ERROR] Failed to retrieve data")
         print("Check stderr for error messages")
+        print("\nTip: You can also use a custom source:")
+        print('  result = get_pagasa_data(source="path/to/bulletin.html")')
         return 1
     
     # Display summary

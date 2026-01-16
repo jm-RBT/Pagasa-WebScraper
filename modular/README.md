@@ -187,6 +187,35 @@ modular/
 - The `bin/consolidated_locations.csv` file must be present in the parent directory
 - No CLI functionality - all modules are pure libraries
 
+## Deployment / Migration to Other Systems
+
+When integrating this modular package into another system, you only need to copy:
+
+1. **The entire `modular/` directory** - Contains all the library code
+2. **The `bin/consolidated_locations.csv` file** - Required for location validation (26,808 Philippine locations)
+
+**Directory structure in your project:**
+```
+your_project/
+├── modular/              # Copy this entire directory
+│   ├── __init__.py
+│   ├── main.py
+│   ├── scrape_bulletin.py
+│   ├── advisory_scraper.py
+│   ├── analyze_pdf.py
+│   └── typhoon_extraction.py
+└── bin/
+    └── consolidated_locations.csv  # Copy this file
+```
+
+**Note**: You do NOT need to copy:
+- Test files (test_*.py)
+- Example files (example_*.py)
+- Any HTML files from the bin/ directory
+- The original CLI scripts from the root directory
+
+The modular package uses the live PAGASA URL by default, so no local HTML files are required.
+
 ## Example Integration
 
 ```python

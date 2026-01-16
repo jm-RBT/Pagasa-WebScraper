@@ -18,18 +18,12 @@ def test_modular():
     print("Testing modular PAGASA WebScraper...")
     print("=" * 80)
     
-    # Use the local HTML file for testing
-    html_file = "bin/PAGASA BULLETIN PAGE/PAGASA.html"
-    
-    if not Path(html_file).exists():
-        print(f"[ERROR] Test file not found: {html_file}")
-        return False
-    
-    print(f"\n[TEST] Using local file: {html_file}")
+    print("\n[TEST] Using live PAGASA URL (requires internet)")
     print("[TEST] Getting PAGASA data...")
+    print("Note: This test requires an active internet connection")
     
     try:
-        result = get_pagasa_data(source=html_file, low_cpu_mode=False)
+        result = get_pagasa_data(low_cpu_mode=False)
         
         if result is None:
             print("\n[FAIL] get_pagasa_data() returned None")

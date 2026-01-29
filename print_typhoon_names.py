@@ -6,10 +6,10 @@ This script extracts typhoon names from PAGASA PDF bulletins in the dataset
 and prints them to stdout. Useful for quick verification and debugging.
 
 Usage: 
-    python print_typhoon_names.py                    # Print names from first 150 PDFs
-    python print_typhoon_names.py --all              # Print names from all PDFs
-    python print_typhoon_names.py --count            # Show count of unique names
+    python print_typhoon_names.py                    # Print names from all PDFs
     python print_typhoon_names.py --unique           # Print only unique names
+    python print_typhoon_names.py --count            # Show count of unique names
+    python print_typhoon_names.py --limit 150        # Limit to first 150 PDFs
     python print_typhoon_names.py --dir <path>       # Specify custom PDF directory
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 from typhoon_extraction import TyphoonBulletinExtractor
 
 
-def print_typhoon_names(pdf_directory="dataset/pdfs", limit=150, unique_only=False, show_count=False):
+def print_typhoon_names(pdf_directory="dataset/pdfs", limit=None, unique_only=False, show_count=False):
     """
     Extract and print typhoon names from PDF bulletins.
     
@@ -95,7 +95,7 @@ def main():
     parser.add_argument(
         "--all",
         action="store_true",
-        help="Process all PDFs (default: first 150)"
+        help="Explicitly process all PDFs (this is now the default behavior)"
     )
     parser.add_argument(
         "--unique",
@@ -127,7 +127,7 @@ def main():
     elif args.all:
         limit = None
     else:
-        limit = 150
+        limit = None  # Process all PDFs by default
     
     print_typhoon_names(
         pdf_directory=args.dir,

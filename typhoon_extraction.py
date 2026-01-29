@@ -1084,6 +1084,7 @@ class TyphoonBulletinExtractor:
         issue_datetime = self.datetime_extractor.extract_issue_datetime(full_text)
         normalized_datetime = self.datetime_extractor.normalize_datetime(issue_datetime)
         
+        typhoon_name = self._extract_typhoon_name(full_text)
         typhoon_location = self._extract_typhoon_location(full_text)
         typhoon_movement = self._extract_typhoon_movement(full_text)
         typhoon_windspeed = self._extract_typhoon_windspeed(full_text)
@@ -1092,6 +1093,7 @@ class TyphoonBulletinExtractor:
         
         # Build result structure
         result = {
+            'typhoon_name': typhoon_name,
             'typhoon_location_text': typhoon_location,
             'typhoon_movement': typhoon_movement,
             'typhoon_windspeed': typhoon_windspeed,
@@ -1104,6 +1106,45 @@ class TyphoonBulletinExtractor:
         }
         
         return result
+    
+    def _extract_typhoon_name(self, text: str) -> str:
+        """Extract typhoon name from bulletin header"""
+        # The typhoon name appears after "TROPICAL CYCLONE BULLETIN" and includes the category
+        # Patterns like:
+        # - "Tropical Depression WILMA"
+        # - "Tropical Storm ROSAL"
+        # - "Typhoon PEPITO"
+        # - "Severe Tropical Storm NAME"
+        
+        # Split text into lines for more precise extraction
+        lines = text.split('\n')
+        
+        # Look for "TROPICAL CYCLONE BULLETIN" line, then get the next line
+        for i, line in enumerate(lines[:30]):  # Search only first 30 lines
+            if 'TROPICAL CYCLONE BULLETIN' in line.upper():
+                # Check the next line for typhoon category and name
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    
+                    # Pattern to extract typhoon name from lines like:
+                    # "Tropical Depression WILMA", "Typhoon PEPITO", etc.
+                    # Match category followed by capitalized name
+                    pattern = r'(?:Tropical\s+Depression|Tropical\s+Storm|Severe\s+Tropical\s+Storm|Typhoon|Super\s+Typhoon)\s+([A-Z][A-Za-z]*)'
+                    match = re.search(pattern, next_line, re.IGNORECASE)
+                    
+                    if match:
+                        typhoon_name = match.group(1).upper()
+                        return typhoon_name
+        
+        # Fallback pattern: search in first page for any pattern like above
+        pattern = r'(?:Tropical\s+Depression|Tropical\s+Storm|Severe\s+Tropical\s+Storm|Typhoon|Super\s+Typhoon)\s+([A-Z][A-Za-z]*)'
+        # Limit to first 2000 characters (roughly first page)
+        match = re.search(pattern, text[:2000], re.IGNORECASE)
+        if match:
+            typhoon_name = match.group(1).upper()
+            return typhoon_name
+        
+        return "Typhoon name not found"
     
     def _extract_typhoon_location(self, text: str) -> str:
         """Extract current typhoon location - exact text from 'Location of Center' section"""

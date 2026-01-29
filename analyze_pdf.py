@@ -221,6 +221,7 @@ def display_results(data):
     
     # Basic Info
     print("\n[BASIC INFORMATION]")
+    print(f"  Typhoon Name: {data.get('typhoon_name', 'N/A')}")
     print(f"  Issued:       {data.get('updated_datetime', 'N/A')}")
     print(f"  Location:     {data.get('typhoon_location_text', 'N/A')}")
     print(f"  Wind Speed:   {data.get('typhoon_windspeed', 'N/A')}")

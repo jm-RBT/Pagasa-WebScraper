@@ -1146,7 +1146,7 @@ class TyphoonBulletinExtractor:
                         return typhoon_name
                     
                     # Pattern 2: Low Pressure Area (formerly NAME) - for final bulletins
-                    pattern_lpa = r'Low\s+Pressure\s+Area\s+\(formerly\s+([A-Z][A-Za-z]*)'
+                    pattern_lpa = r'Low\s+Pressure\s+Area\s+\(formerly\s+([A-Z][A-Za-z]*)\)'
                     match_lpa = re.search(pattern_lpa, next_line, re.IGNORECASE)
                     
                     if match_lpa:
@@ -1170,7 +1170,7 @@ class TyphoonBulletinExtractor:
             return typhoon_name
         
         # Try LPA pattern
-        pattern_lpa = r'Low\s+Pressure\s+Area\s+\(formerly\s+([A-Z][A-Za-z]*)'
+        pattern_lpa = r'Low\s+Pressure\s+Area\s+\(formerly\s+([A-Z][A-Za-z]*)\)'
         match_lpa = re.search(pattern_lpa, text[:2000], re.IGNORECASE)
         if match_lpa:
             typhoon_name = match_lpa.group(1).upper()

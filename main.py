@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Main script: Combines web scraping and PDF analysis for PAGASA bulletins.
+Main script: Combines web scraping and HTML/PDF analysis for PAGASA bulletins.
 
 Copyright (c) 2026 JMontero, Adotac
 Licensed under the MIT License. See LICENSE file in the project root for details.
 
 This script:
 1. Uses scrape_bulletin.py to detect typhoon names and extract PDF links
-2. Selects the latest PDF for each typhoon
-3. Analyzes the latest PDF for each typhoon using analyze_pdf.py functionality
+2. Extracts typhoon data from HTML content (primary method)
+3. Falls back to PDF analysis if HTML extraction fails
 4. Returns data for ALL typhoons found in the bulletin page
 
 By default, outputs raw JSON data to stdout (for easy piping/parsing).
@@ -48,6 +48,7 @@ from pathlib import Path
 from scrape_bulletin import scrape_bulletin
 from typhoon_extraction import TyphoonBulletinExtractor
 from typhoon_image_extractor import TyphoonImageExtractor
+from html_bulletin_extractor import HTMLBulletinExtractor
 import requests
 import tempfile
 from urllib.parse import urlparse
@@ -193,6 +194,110 @@ def fetch_live_advisory_data(verbose=False):
         return None
 
 
+
+
+
+def analyze_html_with_pdf_fallback(html_source, typhoon_index, pdf_url_or_path=None, low_cpu_mode=False, verbose=False):
+    """
+    Analyze typhoon data with HTML as primary method and PDF as fallback.
+    
+    Args:
+        html_source: File path or URL to HTML content
+        typhoon_index: Index of typhoon tab (0-based)
+        pdf_url_or_path: Optional PDF URL or path for fallback
+        low_cpu_mode: Whether to limit CPU usage
+        verbose: Whether to show progress
+        
+    Returns:
+        Dictionary of extracted data, or None on failure
+    """
+    # Try HTML extraction first
+    if verbose:
+        print(f"  Attempting HTML extraction...", file=sys.stderr)
+    
+    try:
+        extractor = HTMLBulletinExtractor()
+        data = extractor.extract_from_html(html_source, typhoon_index=typhoon_index)
+        
+        if data:
+            if verbose:
+                print(f"  Successfully extracted data from HTML", file=sys.stderr)
+            return data
+        else:
+            if verbose:
+                print(f"  HTML extraction returned no data", file=sys.stderr)
+    except Exception as e:
+        if verbose:
+            print(f"  HTML extraction failed: {e}", file=sys.stderr)
+    
+    # Fallback to PDF extraction if HTML fails or PDF is provided
+    if pdf_url_or_path:
+        if verbose:
+            print(f"  Falling back to PDF extraction...", file=sys.stderr)
+        return analyze_pdf(pdf_url_or_path, low_cpu_mode=low_cpu_mode, verbose=verbose)
+    else:
+        if verbose:
+            print(f"  No PDF provided for fallback", file=sys.stderr)
+        return None
+
+
+def analyze_html_and_advisory_parallel(html_source, typhoon_index, pdf_url_or_path=None, low_cpu_mode=False, verbose=False):
+    """
+    Run HTML/PDF analysis and advisory scraping in parallel for better performance.
+    
+    Args:
+        html_source: File path or URL to HTML content
+        typhoon_index: Index of typhoon tab (0-based)
+        pdf_url_or_path: Optional PDF URL or path for fallback
+        low_cpu_mode: Whether to limit CPU usage
+        verbose: Whether to show progress
+        
+    Returns:
+        Dictionary of extracted data with merged rainfall warnings, or None on failure
+    """
+    if verbose:
+        print("[INFO] Starting parallel execution of HTML/PDF analysis and advisory scraping...", file=sys.stderr)
+    
+    html_data = None
+    advisory_data = None
+    
+    # Use ThreadPoolExecutor for I/O bound operations
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        # Submit both tasks
+        html_future = executor.submit(analyze_html_with_pdf_fallback, html_source, typhoon_index, pdf_url_or_path, low_cpu_mode, verbose)
+        advisory_future = executor.submit(fetch_live_advisory_data, verbose)
+        
+        # Wait for both to complete (blocks until both are done)
+        html_data = html_future.result()
+        advisory_data = advisory_future.result()
+        
+        if verbose:
+            print("[INFO] Both tasks completed", file=sys.stderr)
+    
+    # Check if HTML/PDF analysis succeeded
+    if not html_data:
+        if verbose:
+            print("[ERROR] HTML/PDF analysis failed", file=sys.stderr)
+        return None
+    
+    # Merge advisory data with extraction results
+    if advisory_data and any(advisory_data.get(level, []) for level in ['red', 'orange', 'yellow']):
+        # Add rainfall warnings from live advisory data
+        # Map: red -> rainfall_warning_tags1, orange -> rainfall_warning_tags2, yellow -> rainfall_warning_tags3
+        html_data['rainfall_warning_tags1'] = advisory_data.get('red', [])
+        html_data['rainfall_warning_tags2'] = advisory_data.get('orange', [])
+        html_data['rainfall_warning_tags3'] = advisory_data.get('yellow', [])
+        if verbose:
+            print("[INFO] Added live advisory data to extraction", file=sys.stderr)
+    else:
+        # If advisory fetch fails or returns empty data, set empty rainfall warnings
+        if verbose:
+            print("[INFO] No advisory data available, rainfall warnings will be empty", file=sys.stderr)
+        html_data['rainfall_warning_tags1'] = []
+        html_data['rainfall_warning_tags2'] = []
+        html_data['rainfall_warning_tags3'] = []
+    
+    return html_data
 
 
 def analyze_pdf(pdf_url_or_path, low_cpu_mode=False, verbose=False):
@@ -472,24 +577,34 @@ def main():
             
             latest_pdf = get_latest_pdf(pdf_urls)
             
-            if not latest_pdf:
-                if verbose:
-                    print(f"    Warning: No PDFs found for {typhoon_name}, skipping...", file=sys.stderr)
-                continue
-            
             if verbose:
-                print(f"    Latest bulletin: {latest_pdf}", file=sys.stderr)
+                if latest_pdf:
+                    print(f"    Latest bulletin: {latest_pdf}", file=sys.stderr)
+                else:
+                    print(f"    No PDF available, using HTML extraction only", file=sys.stderr)
             
-            # Step 3: Analyze the PDF and fetch advisory data in parallel
-            # (only for first typhoon to avoid duplicate advisory fetches)
+            # Step 3: Analyze using HTML first, then PDF as fallback
+            # (fetch advisory data in parallel only for first typhoon)
             if verbose:
-                print(f"    Analyzing PDF{' and fetching advisory data' if idx == 1 else ''}...", file=sys.stderr)
+                print(f"    Analyzing HTML (with PDF fallback){' and fetching advisory data' if idx == 1 else ''}...", file=sys.stderr)
             
             # Only fetch advisory data once for the first typhoon (it's the same for all typhoons)
             if idx == 1:
-                data = analyze_pdf_and_advisory_parallel(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
+                data = analyze_html_and_advisory_parallel(
+                    source, 
+                    typhoon_index=idx-1,  # 0-based index
+                    pdf_url_or_path=latest_pdf, 
+                    low_cpu_mode=low_cpu_mode, 
+                    verbose=verbose
+                )
             else:
-                data = analyze_pdf(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
+                data = analyze_html_with_pdf_fallback(
+                    source, 
+                    typhoon_index=idx-1,  # 0-based index
+                    pdf_url_or_path=latest_pdf, 
+                    low_cpu_mode=low_cpu_mode, 
+                    verbose=verbose
+                )
                 # Copy rainfall warnings from first typhoon if available
                 if all_typhoon_results and data:
                     first_data = all_typhoon_results[0]['data']
@@ -499,7 +614,7 @@ def main():
             
             if not data:
                 if verbose:
-                    print(f"    Warning: Failed to extract data from PDF for {typhoon_name}, skipping...", file=sys.stderr)
+                    print(f"    Warning: Failed to extract data for {typhoon_name}, skipping...", file=sys.stderr)
                 continue
             
             if verbose:
@@ -507,13 +622,13 @@ def main():
             
             all_typhoon_results.append({
                 'typhoon_name': typhoon_name,
-                'pdf_url': latest_pdf,
+                'pdf_url': latest_pdf if latest_pdf else 'N/A',
                 'data': data
             })
         
         if not all_typhoon_results:
             if verbose:
-                print("\nError: Failed to extract data from any typhoon PDFs", file=sys.stderr)
+                print("\nError: Failed to extract data from any typhoon sources", file=sys.stderr)
             sys.exit(1)
         
         # Step 4: Extract images if requested

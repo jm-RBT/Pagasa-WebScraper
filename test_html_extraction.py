@@ -27,6 +27,8 @@ def main():
     for idx, typhoon in enumerate(typhoons, 1):
         print(f"Typhoon {idx}: {typhoon.get('typhoon_name', 'Unknown')}")
         print("-" * 80)
+        print(f"  Name:         {typhoon.get('typhoon_stripped_name', 'N/A')}")
+        print(f"  Full Name:    {typhoon.get('typhoon_name', 'N/A')}")
         print(f"  Issued:       {typhoon.get('updated_datetime', 'N/A')}")
         print(f"  Location:     {typhoon.get('typhoon_location_text', 'N/A')}")
         print(f"  Movement:     {typhoon.get('typhoon_movement', 'N/A')}")

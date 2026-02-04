@@ -69,6 +69,7 @@ class HTMLBulletinExtractor:
         # Extract data
         data = {
             'typhoon_name': None,
+            'typhoon_stripped_name': None,
             'updated_datetime': None,
             'typhoon_location_text': None,
             'typhoon_movement': None,
@@ -86,7 +87,9 @@ class HTMLBulletinExtractor:
         # Extract typhoon name from heading
         name_heading = typhoon_div.find('h3')
         if name_heading:
-            data['typhoon_name'] = self._extract_typhoon_name(name_heading.get_text())
+            full_name, stripped_name = self._extract_typhoon_name(name_heading.get_text())
+            data['typhoon_name'] = full_name
+            data['typhoon_stripped_name'] = stripped_name
         
         # Extract issued datetime
         datetime_heading = typhoon_div.find('h5')
@@ -123,13 +126,31 @@ class HTMLBulletinExtractor:
         
         return data
     
-    def _extract_typhoon_name(self, text: str) -> Optional[str]:
-        """Extract typhoon name from heading text"""
-        # Pattern: Tropical Storm "Name" or similar
-        match = re.search(r'"([^"]+)"', text)
+    def _extract_typhoon_name(self, text: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Extract typhoon name from heading text.
+        
+        Returns:
+            Tuple of (full_name, stripped_name)
+            - full_name: Complete description (e.g., "Tropical Storm Dante")
+            - stripped_name: Just the typhoon name (e.g., "Dante")
+        """
+        # Clean up the text
+        text_clean = text.strip()
+        
+        # Extract the name from quotes (e.g., "Dante" from 'Tropical Storm "Dante"')
+        match = re.search(r'"([^"]+)"', text_clean)
         if match:
-            return match.group(1)
-        return text.strip()
+            stripped_name = match.group(1)
+            # Create full name by replacing quoted name with unquoted version
+            full_name = text_clean.replace(f'"{stripped_name}"', stripped_name)
+            # Remove any HTML tags or extra whitespace
+            full_name = re.sub(r'<[^>]+>', '', full_name)
+            full_name = ' '.join(full_name.split())
+            return full_name, stripped_name
+        
+        # If no quotes found, return the text as both (fallback)
+        return text_clean, text_clean
     
     def _extract_datetime(self, text: str) -> Optional[str]:
         """Extract and normalize datetime from text"""
@@ -329,7 +350,11 @@ class HTMLBulletinExtractor:
             if data:
                 # Ensure typhoon name is set from tab if not in heading
                 if not data['typhoon_name'] and idx < len(typhoon_names):
-                    data['typhoon_name'] = typhoon_names[idx]
+                    tab_name = typhoon_names[idx]
+                    # Parse the tab name to extract both full and stripped names
+                    full_name, stripped_name = self._extract_typhoon_name(tab_name)
+                    data['typhoon_name'] = full_name
+                    data['typhoon_stripped_name'] = stripped_name
                 results.append(data)
         
         return results

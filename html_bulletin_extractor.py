@@ -144,14 +144,10 @@ class HTMLBulletinExtractor:
         """
         Extract wind speed from strength text.
         
-        Returns the wind speed value if found, otherwise returns None.
+        Returns the full strength text string.
         """
-        # Pattern: "Maximum sustained winds of XX km/h"
-        match = re.search(r'(\d+\s*km/h)', text, re.IGNORECASE)
-        if match:
-            return match.group(1)
-        # If no pattern matches, return None to indicate no wind speed found
-        return None
+        # Return the whole string from the HTML strength field
+        return text.strip() if text else None
     
     def _extract_signal_warnings(self, typhoon_div) -> Dict[int, Dict[str, Optional[str]]]:
         """

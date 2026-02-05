@@ -8,9 +8,10 @@ Licensed under the MIT License. See LICENSE file in the project root for details
 
 This script:
 1. Uses scrape_bulletin.py to detect typhoon names and extract PDF links
-2. Extracts typhoon data from HTML content (primary method)
+2. Extracts typhoon data from HTML content (primary method by default)
 3. Falls back to PDF analysis if HTML extraction fails
-4. Returns data for ALL typhoons found in the bulletin page
+4. Can be configured to use PDF as primary method with --use-pdf flag
+5. Returns data for ALL typhoons found in the bulletin page
 
 By default, outputs raw JSON data to stdout (for easy piping/parsing).
 Use --verbose flag to see progress messages (sent to stderr).
@@ -25,13 +26,16 @@ Options:
     --verbose                           # Show progress messages (to stderr)
     --low-cpu                           # Limit CPU usage to ~30%
     --metrics                           # Show performance metrics (to stderr)
+    --use-pdf                           # Use PDF extraction as primary method instead of HTML
     --extract-image                     # Extract typhoon track images (requires --stream or --save-image)
     --stream                            # Return images as base64 stream with JSON (use with --extract-image)
     --save-image                        # Save images to files (use with --extract-image)
 
 Examples:
-    python main.py                                      # Pure JSON output for all typhoons
+    python main.py                                      # Pure JSON output for all typhoons (HTML primary)
     python main.py --verbose                            # JSON + progress messages
+    python main.py --use-pdf                            # Use PDF extraction as primary method
+    python main.py --use-pdf --verbose                  # PDF extraction with progress messages
     python main.py > output.json                        # Save JSON to file
     python main.py --verbose 2>/dev/null                # JSON only (suppress logs)
     python main.py | jq '.typhoons[0].data.typhoon_windspeed'  # Parse with jq
@@ -504,6 +508,7 @@ def main():
     low_cpu_mode = '--low-cpu' in sys.argv
     show_metrics = '--metrics' in sys.argv
     verbose = '--verbose' in sys.argv
+    use_pdf = '--use-pdf' in sys.argv
     extract_image = '--extract-image' in sys.argv
     stream_image = '--stream' in sys.argv
     save_image_flag = '--save-image' in sys.argv
@@ -583,34 +588,57 @@ def main():
                 else:
                     print(f"    No PDF available, using HTML extraction only", file=sys.stderr)
             
-            # Step 3: Analyze using HTML first, then PDF as fallback
+            # Step 3: Analyze using specified extraction method
             # (fetch advisory data in parallel only for first typhoon)
-            if verbose:
-                print(f"    Analyzing HTML (with PDF fallback){' and fetching advisory data' if idx == 1 else ''}...", file=sys.stderr)
-            
-            # Only fetch advisory data once for the first typhoon (it's the same for all typhoons)
-            if idx == 1:
-                data = analyze_html_and_advisory_parallel(
-                    source, 
-                    typhoon_index=idx-1,  # 0-based index
-                    pdf_url_or_path=latest_pdf, 
-                    low_cpu_mode=low_cpu_mode, 
-                    verbose=verbose
-                )
+            if use_pdf:
+                # Use PDF extraction as primary method
+                if not latest_pdf:
+                    if verbose:
+                        print(f"    Warning: PDF requested but no PDF available, skipping...", file=sys.stderr)
+                    continue
+                
+                if verbose:
+                    print(f"    Analyzing PDF{' and fetching advisory data' if idx == 1 else ''}...", file=sys.stderr)
+                
+                # Only fetch advisory data once for the first typhoon (it's the same for all typhoons)
+                if idx == 1:
+                    data = analyze_pdf_and_advisory_parallel(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
+                else:
+                    data = analyze_pdf(latest_pdf, low_cpu_mode=low_cpu_mode, verbose=verbose)
+                    # Copy rainfall warnings from first typhoon if available
+                    if all_typhoon_results and data:
+                        first_data = all_typhoon_results[0]['data']
+                        data['rainfall_warning_tags1'] = first_data.get('rainfall_warning_tags1', [])
+                        data['rainfall_warning_tags2'] = first_data.get('rainfall_warning_tags2', [])
+                        data['rainfall_warning_tags3'] = first_data.get('rainfall_warning_tags3', [])
             else:
-                data = analyze_html_with_pdf_fallback(
-                    source, 
-                    typhoon_index=idx-1,  # 0-based index
-                    pdf_url_or_path=latest_pdf, 
-                    low_cpu_mode=low_cpu_mode, 
-                    verbose=verbose
-                )
-                # Copy rainfall warnings from first typhoon if available
-                if all_typhoon_results and data:
-                    first_data = all_typhoon_results[0]['data']
-                    data['rainfall_warning_tags1'] = first_data.get('rainfall_warning_tags1', [])
-                    data['rainfall_warning_tags2'] = first_data.get('rainfall_warning_tags2', [])
-                    data['rainfall_warning_tags3'] = first_data.get('rainfall_warning_tags3', [])
+                # Use HTML extraction as primary method (default)
+                if verbose:
+                    print(f"    Analyzing HTML (with PDF fallback){' and fetching advisory data' if idx == 1 else ''}...", file=sys.stderr)
+                
+                # Only fetch advisory data once for the first typhoon (it's the same for all typhoons)
+                if idx == 1:
+                    data = analyze_html_and_advisory_parallel(
+                        source, 
+                        typhoon_index=idx-1,  # 0-based index
+                        pdf_url_or_path=latest_pdf, 
+                        low_cpu_mode=low_cpu_mode, 
+                        verbose=verbose
+                    )
+                else:
+                    data = analyze_html_with_pdf_fallback(
+                        source, 
+                        typhoon_index=idx-1,  # 0-based index
+                        pdf_url_or_path=latest_pdf, 
+                        low_cpu_mode=low_cpu_mode, 
+                        verbose=verbose
+                    )
+                    # Copy rainfall warnings from first typhoon if available
+                    if all_typhoon_results and data:
+                        first_data = all_typhoon_results[0]['data']
+                        data['rainfall_warning_tags1'] = first_data.get('rainfall_warning_tags1', [])
+                        data['rainfall_warning_tags2'] = first_data.get('rainfall_warning_tags2', [])
+                        data['rainfall_warning_tags3'] = first_data.get('rainfall_warning_tags3', [])
             
             if not data:
                 if verbose:

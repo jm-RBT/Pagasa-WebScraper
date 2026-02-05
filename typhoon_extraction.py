@@ -1122,6 +1122,8 @@ class TyphoonBulletinExtractor:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 full_text = "\n".join([page.extract_text() or "" for page in pdf.pages])
+                # Also keep the PDF object for table-based extraction
+                pdf_obj = pdf
         except Exception as e:
             print(f"Error reading PDF {pdf_path}: {e}")
             return None
@@ -1132,8 +1134,8 @@ class TyphoonBulletinExtractor:
         
         typhoon_name, typhoon_stripped_name = self._extract_typhoon_name(full_text)
         typhoon_location = self._extract_typhoon_location(full_text)
-        typhoon_movement = self._extract_typhoon_movement(full_text)
-        typhoon_windspeed = self._extract_typhoon_windspeed(full_text)
+        typhoon_movement = self._extract_typhoon_movement_from_pdf(pdf_path, full_text)
+        typhoon_windspeed = self._extract_typhoon_windspeed_from_pdf(pdf_path, full_text)
         
         signals_by_level = self.signal_extractor.extract_signals(full_text, pdf_path=pdf_path)
         
@@ -1299,7 +1301,7 @@ class TyphoonBulletinExtractor:
         return "Location not found"
     
     def _extract_typhoon_movement(self, text: str) -> str:
-        """Extract typhoon movement - from 'Present Movement' section"""
+        """Extract typhoon movement - from 'Present Movement' section (text-based fallback)"""
         # Look for "Present Movement" header followed by movement description
         pattern = r'Present Movement.*?\n(.*?)(?=(?:Intensity|Location|Extent of|TRACK|PAR|$))'
         
@@ -1324,8 +1326,46 @@ class TyphoonBulletinExtractor:
         
         return "Movement information not found"
     
+    def _extract_typhoon_movement_from_pdf(self, pdf_path: str, fallback_text: str) -> str:
+        """
+        Extract typhoon movement directly from PDF table.
+        Looks for 'Present Movement' header and extracts the cell value below it.
+        Falls back to text-based extraction if table extraction fails.
+        """
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                # Check first few pages (typically page 1 has this info)
+                for page in pdf.pages[:3]:
+                    tables = page.extract_tables()
+                    
+                    for table in tables:
+                        if not table or len(table) < 2:
+                            continue
+                        
+                        # Look for "Present Movement" header row
+                        for row_idx, row in enumerate(table):
+                            if row and row[0]:
+                                cell_text = str(row[0]).lower()
+                                if 'present movement' in cell_text:
+                                    # Found the header, get the next row's data
+                                    if row_idx + 1 < len(table):
+                                        next_row = table[row_idx + 1]
+                                        if next_row and next_row[0]:
+                                            movement_data = str(next_row[0]).strip()
+                                            if movement_data and movement_data != '-':
+                                                # Clean up the text
+                                                movement_data = movement_data.replace('\n', ' ')
+                                                movement_data = re.sub(r'\s+', ' ', movement_data)
+                                                return movement_data
+        except Exception as e:
+            # Silently fall back to text-based extraction
+            pass
+        
+        # Fallback to text-based extraction
+        return self._extract_typhoon_movement(fallback_text)
+    
     def _extract_typhoon_windspeed(self, text: str) -> str:
-        """Extract maximum sustained wind speed with full descriptive text"""
+        """Extract maximum sustained wind speed with full descriptive text (text-based fallback)"""
         # Look for "Intensity" header followed by wind speed info
         pattern = r'Intensity.*?\n(.*?)(?=(?:Present Movement|Location|TRACK|PAR|$))'
         
@@ -1341,6 +1381,44 @@ class TyphoonBulletinExtractor:
                 return result
         
         return "Wind speed not found"
+    
+    def _extract_typhoon_windspeed_from_pdf(self, pdf_path: str, fallback_text: str) -> str:
+        """
+        Extract typhoon windspeed directly from PDF table.
+        Looks for 'Intensity' header and extracts the cell value below it.
+        Falls back to text-based extraction if table extraction fails.
+        """
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                # Check first few pages (typically page 1 has this info)
+                for page in pdf.pages[:3]:
+                    tables = page.extract_tables()
+                    
+                    for table in tables:
+                        if not table or len(table) < 2:
+                            continue
+                        
+                        # Look for "Intensity" header row
+                        for row_idx, row in enumerate(table):
+                            if row and row[0]:
+                                cell_text = str(row[0]).lower()
+                                if 'intensity' in cell_text and 'extent' not in cell_text:
+                                    # Found the header, get the next row's data
+                                    if row_idx + 1 < len(table):
+                                        next_row = table[row_idx + 1]
+                                        if next_row and next_row[0]:
+                                            windspeed_data = str(next_row[0]).strip()
+                                            if windspeed_data and windspeed_data != '-':
+                                                # Clean up the text
+                                                windspeed_data = windspeed_data.replace('\n', ' ')
+                                                windspeed_data = re.sub(r'\s+', ' ', windspeed_data)
+                                                return windspeed_data
+        except Exception as e:
+            # Silently fall back to text-based extraction
+            pass
+        
+        # Fallback to text-based extraction
+        return self._extract_typhoon_windspeed(fallback_text)
     
     def _build_island_group_dict(self, warnings_by_level: Dict[int, Dict[str, Optional[str]]], level: int) -> Dict:
         """Build IslandGroupType dictionary for specific warning level"""

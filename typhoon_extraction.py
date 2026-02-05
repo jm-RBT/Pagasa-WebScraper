@@ -270,12 +270,18 @@ class SignalWarningExtractor:
                             continue
                         
                         # Look for TCWS table by checking headers
-                        # Expected structure:
-                        # Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
-                        # Row 1: ['TCWS No.', 'Luzon', 'Visayas', 'Mindanao']
-                        # Row 2+: Signal data
+                        # Expected structure - TWO FORMATS:
+                        # FORMAT 1 (with island group headers):
+                        #   Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
+                        #   Row 1: ['TCWS No.', 'Luzon', 'Visayas', 'Mindanao']
+                        #   Row 2+: Signal data
+                        #
+                        # FORMAT 2 (without island group headers - like basyang):
+                        #   Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
+                        #   Row 1+: Signal data directly (columns: TCWS | Luzon | Visayas | Mindanao)
                         
                         header_row_idx = -1
+                        has_island_headers = False
                         
                         # Find the header row with column names
                         for i, row in enumerate(table[:self.MAX_HEADER_SEARCH_ROWS]):
@@ -284,30 +290,50 @@ class SignalWarningExtractor:
                                 row_str = ' '.join([str(cell).lower() if cell else '' for cell in row])
                                 if 'tcws' in row_str and 'luzon' in row_str and 'visayas' in row_str and 'mindanao' in row_str:
                                     header_row_idx = i
+                                    has_island_headers = True
                                     break
+                        
+                        # If no explicit header with island names found, look for TCWS table marker
+                        if header_row_idx < 0:
+                            for i, row in enumerate(table[:self.MAX_HEADER_SEARCH_ROWS]):
+                                if row and row[0]:
+                                    row_str = str(row[0]).lower()
+                                    if 'tropical cyclone wind signal' in row_str or 'tcws' in row_str:
+                                        # This is the TCWS header row, data starts next row
+                                        header_row_idx = i
+                                        has_island_headers = False
+                                        break
                         
                         if header_row_idx < 0:
                             continue
                         
                         # Found TCWS table
                         found_tcws_table = True
-                        header_row = table[header_row_idx]
                         
                         # Identify column indices for each island group
                         col_indices = {'Luzon': -1, 'Visayas': -1, 'Mindanao': -1}
                         
-                        for col_idx, header_cell in enumerate(header_row):
-                            if header_cell:
-                                header_lower = str(header_cell).lower()
-                                if 'luzon' in header_lower:
-                                    col_indices['Luzon'] = col_idx
-                                elif 'visayas' in header_lower:
-                                    col_indices['Visayas'] = col_idx
-                                elif 'mindanao' in header_lower:
-                                    col_indices['Mindanao'] = col_idx
+                        if has_island_headers:
+                            # FORMAT 1: Parse from header row with island group names
+                            header_row = table[header_row_idx]
+                            for col_idx, header_cell in enumerate(header_row):
+                                if header_cell:
+                                    header_lower = str(header_cell).lower()
+                                    if 'luzon' in header_lower:
+                                        col_indices['Luzon'] = col_idx
+                                    elif 'visayas' in header_lower:
+                                        col_indices['Visayas'] = col_idx
+                                    elif 'mindanao' in header_lower:
+                                        col_indices['Mindanao'] = col_idx
+                            data_start_row = header_row_idx + 1
+                        else:
+                            # FORMAT 2: Use column position counting (column 1 = Luzon, 2 = Visayas, 3 = Mindanao)
+                            # Column 0 is the signal number, so island columns are 1, 2, 3
+                            col_indices = {'Luzon': 1, 'Visayas': 2, 'Mindanao': 3}
+                            data_start_row = header_row_idx + 1
                         
                         # Parse data rows (after header)
-                        for row_idx in range(header_row_idx + 1, len(table)):
+                        for row_idx in range(data_start_row, len(table)):
                             row = table[row_idx]
                             if not row or len(row) < self.MIN_TABLE_ROWS:
                                 continue

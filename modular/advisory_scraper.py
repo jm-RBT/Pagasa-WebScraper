@@ -45,23 +45,10 @@ import tempfile
 
 
 # Configuration
-TARGET_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
-# Fallback archive URL if needed for testing
-# WEB_ARCHIVE_URL = "https://web.archive.org/web/20251109044534/https://www.pagasa.dost.gov.ph/weather/weather-advisory"
-
-# Try multiple paths to find consolidated_locations.csv
-_possible_paths = [
-    Path(__file__).parent.parent / "bin" / "consolidated_locations.csv",  # From modular/ to bin/
-    Path(__file__).parent / "bin" / "consolidated_locations.csv",  # If already in root
-    Path("bin") / "consolidated_locations.csv",  # Relative to CWD
-]
-CONSOLIDATED_LOCATIONS_PATH = None
-for _path in _possible_paths:
-    if _path.exists():
-        CONSOLIDATED_LOCATIONS_PATH = _path
-        break
-if CONSOLIDATED_LOCATIONS_PATH is None:
-    CONSOLIDATED_LOCATIONS_PATH = Path("bin") / "consolidated_locations.csv"  # Fallback
+TARGEST_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
+# TODO: Change the URL to the live PAGASA Weather Advisory endpoint when real data is available
+# TARGET_URL = "https://web.archive.org/web/20251109044534/https://www.pagasa.dost.gov.ph/weather/weather-advisory"
+CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent / "consolidated_locations.csv"
 # Use system temp directory for temporary PDF storage
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "pagasa_advisory_temp"
 

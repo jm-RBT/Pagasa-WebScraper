@@ -38,7 +38,7 @@ def get_number_of_typhoons(source):
     """
     Check for the number of typhoons in the HTML bulletin page.
     
-    This function counts typhoon tabs by looking for:
+    This function counts typhoon tabs and extracts their names by looking for:
     1. Tab navigation elements (ul.nav-tabs > li[role="presentation"])
     2. Tab content divs with IDs like tcwb-1, tcwb-2, etc.
     
@@ -46,8 +46,14 @@ def get_number_of_typhoons(source):
         source: File path or URL to HTML content
         
     Returns:
-        Integer count of typhoons found, or 0 if none found
+        Tuple of (count, typhoon_names_array) where:
+        - count: Integer count of typhoons found
+        - typhoon_names_array: List of dicts with 'full_name' and 'stripped_name' for each typhoon
+        Returns (0, []) if none found
+        Returns (1, []) for PDF files (name unknown)
     """
+    import re
+    
     # Convert to string if Path object
     source = str(source)
     
@@ -60,39 +66,68 @@ def get_number_of_typhoons(source):
         else:
             filepath = Path(source)
             if filepath.suffix.lower() == '.pdf':
-                # PDF files represent a single typhoon
-                return 1
+                # PDF files represent a single typhoon (name unknown from filename)
+                return (1, [])
             if not filepath.exists():
                 print(f"[WARNING] HTML file not found: {source}", file=sys.stderr)
-                return 0
+                return (0, [])
             with open(filepath, 'r', encoding='utf-8') as f:
                 html_content = f.read()
     except Exception as e:
         print(f"[WARNING] Failed to load HTML: {e}", file=sys.stderr)
-        return 0
+        return (0, [])
     
     soup = BeautifulSoup(html_content, 'html.parser')
     
-    # Method 1: Count typhoon tabs in navigation
+    # Helper function to extract stripped name from full name
+    def extract_stripped_name(full_name):
+        """Extract stripped name from full typhoon name (same logic as html_bulletin_extractor)"""
+        text_clean = full_name.strip()
+        
+        # Extract the name from quotes (e.g., "Dante" from 'Tropical Storm "Dante"')
+        match = re.search(r'"([^"]+)"', text_clean)
+        if match:
+            stripped_name = match.group(1)
+            # Create full name by replacing quoted name with unquoted version
+            full_name_clean = text_clean.replace(f'"{stripped_name}"', stripped_name)
+            # Remove any HTML tags or extra whitespace
+            full_name_clean = re.sub(r'<[^>]+>', '', full_name_clean)
+            full_name_clean = ' '.join(full_name_clean.split())
+            return full_name_clean, stripped_name
+        
+        # If no quotes found, return the text as both (fallback)
+        return text_clean, text_clean
+    
+    # Try to extract typhoon names from tabs
     tab_list = soup.find('ul', class_='nav nav-tabs')
+    typhoon_names = []
+    
     if tab_list:
         tabs = tab_list.find_all('li', role='presentation')
         if tabs:
-            return len(tabs)
+            for tab in tabs:
+                tab_link = tab.find('a')
+                if tab_link:
+                    typhoon_name = tab_link.get_text(strip=True)
+                    full_name, stripped_name = extract_stripped_name(typhoon_name)
+                    typhoon_names.append({
+                        'full_name': full_name,
+                        'stripped_name': stripped_name
+                    })
+            return (len(typhoon_names), typhoon_names)
     
-    # Method 2: Count tab content divs with tcwb-* IDs
-    import re
+    # Method 2: Count tab content divs with tcwb-* IDs (no names available)
     tab_content_divs = soup.find_all('div', id=re.compile(r'^tcwb-\d+$'))
     if tab_content_divs:
-        return len(tab_content_divs)
+        return (len(tab_content_divs), [])
     
-    # Method 3: Count tab-pane divs (general fallback)
+    # Method 3: Count tab-pane divs (general fallback, no names available)
     tab_panes = soup.find_all('div', class_='tab-pane')
     if tab_panes:
-        return len(tab_panes)
+        return (len(tab_panes), [])
     
     # No typhoons found
-    return 0
+    return (0, [])
 
 
 def get_typhoon_names_and_pdfs(source):

@@ -45,8 +45,20 @@ class LocationMatcher:
     def __init__(self, consolidated_csv_path: str = None):
         """Load consolidated locations mapping"""
         if consolidated_csv_path is None:
-            # Default to consolidated_locations.csv in the same directory as this module
-            consolidated_csv_path = str(Path(__file__).parent / "consolidated_locations.csv")
+            # Default to bin/consolidated_locations.csv relative to project root
+            # Try multiple paths to ensure compatibility
+            possible_paths = [
+                Path(__file__).parent.parent / "bin" / "consolidated_locations.csv",  # From modular/ to bin/
+                Path(__file__).parent / "bin" / "consolidated_locations.csv",  # If already in root
+                Path("bin") / "consolidated_locations.csv",  # Relative to CWD
+            ]
+            for path in possible_paths:
+                if path.exists():
+                    consolidated_csv_path = str(path)
+                    break
+            else:
+                # Fallback to relative path (might fail but provides clear error)
+                consolidated_csv_path = "bin/consolidated_locations.csv"
         self.locations_df = pd.read_csv(consolidated_csv_path)
 
         self.priority = {"Province": 5, "Region": 4, "City": 3, "Municipality": 2, "Barangay": 1}

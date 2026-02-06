@@ -277,6 +277,7 @@ class SignalWarningExtractor:
                         # Row 2+: Signal data
 
                         header_row_idx = -1
+                        has_island_headers = False
 
                         # Find the header row with column names
                         for i, row in enumerate(table[: self.MAX_HEADER_SEARCH_ROWS]):
@@ -290,30 +291,51 @@ class SignalWarningExtractor:
                                     and "mindanao" in row_str
                                 ):
                                     header_row_idx = i
+                                    has_island_headers = True
                                     break
+
+                        # If no explicit header with island names found, look for TCWS table marker
+                        # This handles FORMAT 2 tables (like basyang) that don't have island group headers
+                        if header_row_idx < 0:
+                            for i, row in enumerate(table[: self.MAX_HEADER_SEARCH_ROWS]):
+                                if row and row[0]:
+                                    row_str = str(row[0]).lower()
+                                    if "tropical cyclone wind signal" in row_str or "tcws" in row_str:
+                                        # This is the TCWS header row, data starts next row
+                                        header_row_idx = i
+                                        has_island_headers = False
+                                        break
 
                         if header_row_idx < 0:
                             continue
 
                         # Found TCWS table
                         found_tcws_table = True
-                        header_row = table[header_row_idx]
 
                         # Identify column indices for each island group
                         col_indices = {"Luzon": -1, "Visayas": -1, "Mindanao": -1}
 
-                        for col_idx, header_cell in enumerate(header_row):
-                            if header_cell:
-                                header_lower = str(header_cell).lower()
-                                if "luzon" in header_lower:
-                                    col_indices["Luzon"] = col_idx
-                                elif "visayas" in header_lower:
-                                    col_indices["Visayas"] = col_idx
-                                elif "mindanao" in header_lower:
-                                    col_indices["Mindanao"] = col_idx
+                        if has_island_headers:
+                            # FORMAT 1: Parse from header row with island group names
+                            header_row = table[header_row_idx]
+                            for col_idx, header_cell in enumerate(header_row):
+                                if header_cell:
+                                    header_lower = str(header_cell).lower()
+                                    if "luzon" in header_lower:
+                                        col_indices["Luzon"] = col_idx
+                                    elif "visayas" in header_lower:
+                                        col_indices["Visayas"] = col_idx
+                                    elif "mindanao" in header_lower:
+                                        col_indices["Mindanao"] = col_idx
+                            data_start_row = header_row_idx + 1
+                        else:
+                            # FORMAT 2: Use column position counting (column 1 = Luzon, 2 = Visayas, 3 = Mindanao)
+                            # Column 0 is the signal number, so island columns are 1, 2, 3
+                            col_indices = {"Luzon": 1, "Visayas": 2, "Mindanao": 3}
+                            data_start_row = header_row_idx + 1
 
                         # Parse data rows (after header)
-                        for row_idx in range(header_row_idx + 1, len(table)):
+                        for row_idx in range(data_start_row, len(table)):
                             row = table[row_idx]
                             if not row or len(row) < self.MIN_TABLE_ROWS:
                                 continue

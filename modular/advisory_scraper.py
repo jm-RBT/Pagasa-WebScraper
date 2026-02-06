@@ -45,7 +45,7 @@ import tempfile
 
 
 # Configuration
-TARGEST_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
+TARGET_URL = "https://www.pagasa.dost.gov.ph/weather/weather-advisory"
 # TODO: Change the URL to the live PAGASA Weather Advisory endpoint when real data is available
 # TARGET_URL = "https://web.archive.org/web/20251109044534/https://www.pagasa.dost.gov.ph/weather/weather-advisory"
 CONSOLIDATED_LOCATIONS_PATH = Path(__file__).parent / "consolidated_locations.csv"

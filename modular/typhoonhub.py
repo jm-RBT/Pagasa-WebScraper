@@ -34,6 +34,67 @@ from .html_bulletin_extractor import HTMLBulletinExtractor
 from .typhoon_image_extractor import TyphoonImageExtractor
 
 
+def get_number_of_typhoons(source):
+    """
+    Check for the number of typhoons in the HTML bulletin page.
+    
+    This function counts typhoon tabs by looking for:
+    1. Tab navigation elements (ul.nav-tabs > li[role="presentation"])
+    2. Tab content divs with IDs like tcwb-1, tcwb-2, etc.
+    
+    Args:
+        source: File path or URL to HTML content
+        
+    Returns:
+        Integer count of typhoons found, or 0 if none found
+    """
+    # Convert to string if Path object
+    source = str(source)
+    
+    # Load HTML content
+    try:
+        if source.startswith('http://') or source.startswith('https://'):
+            response = requests.get(source, timeout=30)
+            response.raise_for_status()
+            html_content = response.text
+        else:
+            filepath = Path(source)
+            if filepath.suffix.lower() == '.pdf':
+                # PDF files represent a single typhoon
+                return 1
+            if not filepath.exists():
+                print(f"[WARNING] HTML file not found: {source}", file=sys.stderr)
+                return 0
+            with open(filepath, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+    except Exception as e:
+        print(f"[WARNING] Failed to load HTML: {e}", file=sys.stderr)
+        return 0
+    
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Method 1: Count typhoon tabs in navigation
+    tab_list = soup.find('ul', class_='nav nav-tabs')
+    if tab_list:
+        tabs = tab_list.find_all('li', role='presentation')
+        if tabs:
+            return len(tabs)
+    
+    # Method 2: Count tab content divs with tcwb-* IDs
+    import re
+    tab_content_divs = soup.find_all('div', id=re.compile(r'^tcwb-\d+$'))
+    if tab_content_divs:
+        return len(tab_content_divs)
+    
+    # Method 3: Count tab-pane divs (general fallback)
+    tab_panes = soup.find_all('div', class_='tab-pane')
+    if tab_panes:
+        return len(tab_panes)
+    
+    # No typhoons found
+    return 0
+
+
 def get_typhoon_names_and_pdfs(source):
     """
     Extract typhoon names and PDF links from PAGASA bulletin page.

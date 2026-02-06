@@ -270,12 +270,18 @@ class SignalWarningExtractor:
                             continue
                         
                         # Look for TCWS table by checking headers
-                        # Expected structure:
-                        # Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
-                        # Row 1: ['TCWS No.', 'Luzon', 'Visayas', 'Mindanao']
-                        # Row 2+: Signal data
+                        # Expected structure - TWO FORMATS:
+                        # FORMAT 1 (with island group headers):
+                        #   Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
+                        #   Row 1: ['TCWS No.', 'Luzon', 'Visayas', 'Mindanao']
+                        #   Row 2+: Signal data
+                        #
+                        # FORMAT 2 (without island group headers - like basyang):
+                        #   Row 0: ['TROPICAL CYCLONE WIND SIGNALS (TCWS) IN EFFECT', None, None, None]
+                        #   Row 1+: Signal data directly (columns: TCWS | Luzon | Visayas | Mindanao)
                         
                         header_row_idx = -1
+                        has_island_headers = False
                         
                         # Find the header row with column names
                         for i, row in enumerate(table[:self.MAX_HEADER_SEARCH_ROWS]):
@@ -284,30 +290,50 @@ class SignalWarningExtractor:
                                 row_str = ' '.join([str(cell).lower() if cell else '' for cell in row])
                                 if 'tcws' in row_str and 'luzon' in row_str and 'visayas' in row_str and 'mindanao' in row_str:
                                     header_row_idx = i
+                                    has_island_headers = True
                                     break
+                        
+                        # If no explicit header with island names found, look for TCWS table marker
+                        if header_row_idx < 0:
+                            for i, row in enumerate(table[:self.MAX_HEADER_SEARCH_ROWS]):
+                                if row and row[0]:
+                                    row_str = str(row[0]).lower()
+                                    if 'tropical cyclone wind signal' in row_str or 'tcws' in row_str:
+                                        # This is the TCWS header row, data starts next row
+                                        header_row_idx = i
+                                        has_island_headers = False
+                                        break
                         
                         if header_row_idx < 0:
                             continue
                         
                         # Found TCWS table
                         found_tcws_table = True
-                        header_row = table[header_row_idx]
                         
                         # Identify column indices for each island group
                         col_indices = {'Luzon': -1, 'Visayas': -1, 'Mindanao': -1}
                         
-                        for col_idx, header_cell in enumerate(header_row):
-                            if header_cell:
-                                header_lower = str(header_cell).lower()
-                                if 'luzon' in header_lower:
-                                    col_indices['Luzon'] = col_idx
-                                elif 'visayas' in header_lower:
-                                    col_indices['Visayas'] = col_idx
-                                elif 'mindanao' in header_lower:
-                                    col_indices['Mindanao'] = col_idx
+                        if has_island_headers:
+                            # FORMAT 1: Parse from header row with island group names
+                            header_row = table[header_row_idx]
+                            for col_idx, header_cell in enumerate(header_row):
+                                if header_cell:
+                                    header_lower = str(header_cell).lower()
+                                    if 'luzon' in header_lower:
+                                        col_indices['Luzon'] = col_idx
+                                    elif 'visayas' in header_lower:
+                                        col_indices['Visayas'] = col_idx
+                                    elif 'mindanao' in header_lower:
+                                        col_indices['Mindanao'] = col_idx
+                            data_start_row = header_row_idx + 1
+                        else:
+                            # FORMAT 2: Use column position counting (column 1 = Luzon, 2 = Visayas, 3 = Mindanao)
+                            # Column 0 is the signal number, so island columns are 1, 2, 3
+                            col_indices = {'Luzon': 1, 'Visayas': 2, 'Mindanao': 3}
+                            data_start_row = header_row_idx + 1
                         
                         # Parse data rows (after header)
-                        for row_idx in range(header_row_idx + 1, len(table)):
+                        for row_idx in range(data_start_row, len(table)):
                             row = table[row_idx]
                             if not row or len(row) < self.MIN_TABLE_ROWS:
                                 continue
@@ -1104,16 +1130,17 @@ class TyphoonBulletinExtractor:
         issue_datetime = self.datetime_extractor.extract_issue_datetime(full_text)
         normalized_datetime = self.datetime_extractor.normalize_datetime(issue_datetime)
         
-        typhoon_name = self._extract_typhoon_name(full_text)
+        typhoon_name, typhoon_stripped_name = self._extract_typhoon_name(full_text)
         typhoon_location = self._extract_typhoon_location(full_text)
-        typhoon_movement = self._extract_typhoon_movement(full_text)
-        typhoon_windspeed = self._extract_typhoon_windspeed(full_text)
+        typhoon_movement = self._extract_typhoon_movement(full_text, pdf_path=pdf_path)
+        typhoon_windspeed = self._extract_typhoon_windspeed(full_text, pdf_path=pdf_path)
         
         signals_by_level = self.signal_extractor.extract_signals(full_text, pdf_path=pdf_path)
         
         # Build result structure
         result = {
             'typhoon_name': typhoon_name,
+            'typhoon_stripped_name': typhoon_stripped_name,
             'typhoon_location_text': typhoon_location,
             'typhoon_movement': typhoon_movement,
             'typhoon_windspeed': typhoon_windspeed,
@@ -1127,15 +1154,22 @@ class TyphoonBulletinExtractor:
         
         return result
     
-    def _extract_typhoon_name(self, text: str) -> str:
-        """Extract typhoon name from bulletin header - returns full category + name"""
+    def _extract_typhoon_name(self, text: str) -> Tuple[str, str]:
+        """
+        Extract typhoon name from bulletin header.
+        
+        Returns:
+            Tuple of (full_name, stripped_name)
+            - full_name: Full typhoon classification with name (e.g., "Tropical Storm ROSAL")
+            - stripped_name: Just the typhoon name (e.g., "ROSAL")
+        """
         # Returns the full typhoon classification with name:
-        # - "Tropical Depression WILMA"
-        # - "Tropical Storm ROSAL"
-        # - "Tropical Storm "KARDING""
-        # - "Typhoon PEPITO"
-        # - "Super Typhoon LEON"
-        # - "Low Pressure Area (formerly WILMA)" (for final bulletins)
+        # - "Tropical Depression WILMA" -> ("Tropical Depression WILMA", "WILMA")
+        # - "Tropical Storm ROSAL" -> ("Tropical Storm ROSAL", "ROSAL")
+        # - "Tropical Storm "KARDING"" -> ("Tropical Storm KARDING", "KARDING")
+        # - "Typhoon PEPITO" -> ("Typhoon PEPITO", "PEPITO")
+        # - "Super Typhoon LEON" -> ("Super Typhoon LEON", "LEON")
+        # - "Low Pressure Area (formerly WILMA)" -> ("Low Pressure Area (formerly WILMA)", "WILMA")
         
         # Common words that are NOT typhoon names (to filter out false matches)
         EXCLUDED_WORDS = {
@@ -1165,7 +1199,9 @@ class TyphoonBulletinExtractor:
                         if name_match:
                             name_only = name_match.group(1).upper()
                             if name_only not in EXCLUDED_WORDS:
-                                return full_name
+                                # Remove quotes from full name for cleaner output
+                                full_name_clean = re.sub(r'[\u201c\u201d""]', '', full_name)
+                                return full_name_clean, name_only
                     
                     # Pattern 1b: Active typhoon without quotes - "Tropical Depression WILMA"
                     # Captures the full "Category NAME" or "Category NAME (INTERNATIONAL)"
@@ -1176,7 +1212,7 @@ class TyphoonBulletinExtractor:
                         full_name = match.group(1).strip()
                         name_only = match.group(2).upper()
                         if name_only not in EXCLUDED_WORDS and len(name_only) >= 3:
-                            return full_name
+                            return full_name, name_only
                     
                     # Pattern 2: Low Pressure Area (formerly NAME) - for final bulletins
                     pattern_lpa = r'(Low\s+Pressure\s+Area\s+\(formerly\s+[A-Z][A-Za-z]*(?:\s*\([^)]*\))?\))'
@@ -1189,7 +1225,7 @@ class TyphoonBulletinExtractor:
                         if name_match:
                             name_only = name_match.group(1).upper()
                             if name_only not in EXCLUDED_WORDS:
-                                return full_name
+                                return full_name, name_only
         
         # Fallback: Only search within bulletin/advisory context (not entire page)
         bulletin_match = re.search(r'TROPICAL CYCLONE (?:BULLETIN|ADVISORY)', text, re.IGNORECASE)
@@ -1207,7 +1243,9 @@ class TyphoonBulletinExtractor:
                 if name_match:
                     name_only = name_match.group(1).upper()
                     if name_only not in EXCLUDED_WORDS:
-                        return full_name
+                        # Remove quotes from full name for cleaner output
+                        full_name_clean = re.sub(r'[\u201c\u201d""]', '', full_name)
+                        return full_name_clean, name_only
             
             # Try active typhoon pattern
             pattern = r'((?:Tropical\s+Depression|Tropical\s+Storm|Severe\s+Tropical\s+Storm|Typhoon|Super\s+Typhoon)\s+([A-Z][A-Za-z]*)(?:\s*\([^)]*\))?)'
@@ -1216,7 +1254,7 @@ class TyphoonBulletinExtractor:
                 full_name = match.group(1).strip()
                 name_only = match.group(2).upper()
                 if name_only not in EXCLUDED_WORDS and len(name_only) >= 3:
-                    return full_name
+                    return full_name, name_only
             
             # Try LPA pattern
             pattern_lpa = r'(Low\s+Pressure\s+Area\s+\(formerly\s+[A-Z][A-Za-z]*(?:\s*\([^)]*\))?\))'
@@ -1227,9 +1265,9 @@ class TyphoonBulletinExtractor:
                 if name_match:
                     name_only = name_match.group(1).upper()
                     if name_only not in EXCLUDED_WORDS:
-                        return full_name
+                        return full_name, name_only
         
-        return "Typhoon name not found"
+        return "Typhoon name not found", "Unknown"
     
     def _extract_typhoon_location(self, text: str) -> str:
         """Extract current typhoon location - exact text from 'Location of Center' section"""
@@ -1260,8 +1298,43 @@ class TyphoonBulletinExtractor:
         
         return "Location not found"
     
-    def _extract_typhoon_movement(self, text: str) -> str:
-        """Extract typhoon movement - from 'Present Movement' section"""
+    def _extract_typhoon_movement(self, text: str, pdf_path: str = None) -> str:
+        """
+        Extract typhoon movement from PDF table or text.
+        If pdf_path is provided, tries table-based extraction first, then falls back to text-based.
+        """
+        # Try table-based extraction if pdf_path is provided
+        if pdf_path:
+            try:
+                with pdfplumber.open(pdf_path) as pdf:
+                    # Check first few pages (typically page 1 has this info)
+                    for page in pdf.pages[:3]:
+                        tables = page.extract_tables()
+                        
+                        for table in tables:
+                            if not table or len(table) < 2:
+                                continue
+                            
+                            # Look for "Present Movement" header row
+                            for row_idx, row in enumerate(table):
+                                if row and row[0]:
+                                    cell_text = str(row[0]).lower()
+                                    if 'present movement' in cell_text:
+                                        # Found the header, get the next row's data
+                                        if row_idx + 1 < len(table):
+                                            next_row = table[row_idx + 1]
+                                            if next_row and next_row[0]:
+                                                movement_data = str(next_row[0]).strip()
+                                                if movement_data and movement_data != '-':
+                                                    # Clean up the text
+                                                    movement_data = movement_data.replace('\n', ' ')
+                                                    movement_data = re.sub(r'\s+', ' ', movement_data)
+                                                    return movement_data
+            except Exception as e:
+                # Silently fall back to text-based extraction
+                pass
+        
+        # Text-based extraction (original logic)
         # Look for "Present Movement" header followed by movement description
         pattern = r'Present Movement.*?\n(.*?)(?=(?:Intensity|Location|Extent of|TRACK|PAR|$))'
         
@@ -1286,8 +1359,43 @@ class TyphoonBulletinExtractor:
         
         return "Movement information not found"
     
-    def _extract_typhoon_windspeed(self, text: str) -> str:
-        """Extract maximum sustained wind speed with full descriptive text"""
+    def _extract_typhoon_windspeed(self, text: str, pdf_path: str = None) -> str:
+        """
+        Extract typhoon windspeed from PDF table or text.
+        If pdf_path is provided, tries table-based extraction first, then falls back to text-based.
+        """
+        # Try table-based extraction if pdf_path is provided
+        if pdf_path:
+            try:
+                with pdfplumber.open(pdf_path) as pdf:
+                    # Check first few pages (typically page 1 has this info)
+                    for page in pdf.pages[:3]:
+                        tables = page.extract_tables()
+                        
+                        for table in tables:
+                            if not table or len(table) < 2:
+                                continue
+                            
+                            # Look for "Intensity" header row
+                            for row_idx, row in enumerate(table):
+                                if row and row[0]:
+                                    cell_text = str(row[0]).lower()
+                                    if 'intensity' in cell_text and 'extent' not in cell_text:
+                                        # Found the header, get the next row's data
+                                        if row_idx + 1 < len(table):
+                                            next_row = table[row_idx + 1]
+                                            if next_row and next_row[0]:
+                                                windspeed_data = str(next_row[0]).strip()
+                                                if windspeed_data and windspeed_data != '-':
+                                                    # Clean up the text
+                                                    windspeed_data = windspeed_data.replace('\n', ' ')
+                                                    windspeed_data = re.sub(r'\s+', ' ', windspeed_data)
+                                                    return windspeed_data
+            except Exception as e:
+                # Silently fall back to text-based extraction
+                pass
+        
+        # Text-based extraction (original logic)
         # Look for "Intensity" header followed by wind speed info
         pattern = r'Intensity.*?\n(.*?)(?=(?:Present Movement|Location|TRACK|PAR|$))'
         

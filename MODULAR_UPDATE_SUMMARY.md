@@ -2,43 +2,39 @@
 
 ## Overview
 
-The modular files in `modular/` directory have been updated to align with the current PAGASA scraper implementation. These changes ensure seamless integration with the Workbench project while maintaining 100% backward compatibility.
+The modular files in `modular/` directory have been updated with comprehensive documentation to support integration with the Workbench project while maintaining 100% backward compatibility.
+
+## ⚠️ Important: Path Changes Reverted
+
+**Per user request, filepath modifications to modular scripts were reverted.** The modular scripts now use their **original** configuration:
+
+- `modular/typhoon_extraction.py`: Uses `Path(__file__).parent / "consolidated_locations.csv"`
+- `modular/advisory_scraper.py`: Uses `Path(__file__).parent / "consolidated_locations.csv"`
+
+This means the scripts expect `consolidated_locations.csv` to be in the **same `modular/` directory** as the script files.
 
 ## Changes Made
 
-### 1. Fixed Path Resolution (modular/typhoon_extraction.py)
+### 1. Path Configuration (REVERTED)
 
-**Problem:** The LocationMatcher class was looking for `consolidated_locations.csv` in the wrong location.
+**Status:** Path resolution changes were **reverted** to original configuration.
 
-**Solution:** Implemented smart path resolution with multiple fallback options:
-
+**Current State:** The modular scripts use their original paths:
 ```python
-# OLD CODE:
+# CURRENT CODE (original):
 consolidated_csv_path = str(Path(__file__).parent / "consolidated_locations.csv")
-
-# NEW CODE:
-possible_paths = [
-    Path(__file__).parent.parent / "bin" / "consolidated_locations.csv",  # From modular/ to bin/
-    Path(__file__).parent / "bin" / "consolidated_locations.csv",  # If already in root
-    Path("bin") / "consolidated_locations.csv",  # Relative to CWD
-]
-# Find first existing path
 ```
 
-This ensures the CSV is found correctly whether you:
-- Import from the project root
-- Import from a subdirectory
-- Import from an external project
+For integration into external projects, you must ensure `consolidated_locations.csv` is copied into the `modular/` directory.
 
-### 2. Fixed Configuration (modular/advisory_scraper.py)
+### 2. Configuration Constants (REVERTED)
 
-**Problem:** Typo in URL constant and incorrect path to consolidated locations.
+**Status:** Typo fix was **reverted** to maintain original code.
 
-**Solution:**
-- Fixed `TARGEST_URL` → `TARGET_URL`
-- Applied same smart path resolution as typhoon_extraction.py
+**Current State:**
+- Original constant name `TARGEST_URL` is preserved (note: this may be intentional or a typo in the original)
 
-### 3. Added Documentation
+### 3. Added Documentation (ACTIVE)
 
 Created two new files:
 
@@ -85,6 +81,15 @@ def get_pagasa_data(source=None):
 
 ## How to Use in Workbench
 
+### Setup Requirements
+
+**Important:** Before integration, ensure `consolidated_locations.csv` is copied into the `modular/` directory:
+
+```bash
+# Copy the CSV file into the modular directory
+cp bin/consolidated_locations.csv modular/
+```
+
 ### Basic Integration
 
 ```python
@@ -127,16 +132,16 @@ See `examples/example_workbench_integration.py` for complete examples including:
 All modular files have been tested and verified:
 
 ✓ Imports work correctly
-✓ LocationMatcher loads 43,760 locations
-✓ TyphoonBulletinExtractor initializes properly
-✓ PDF analysis works with sample data
 ✓ Function signatures are unchanged
 ✓ No security vulnerabilities (CodeQL clean)
 ✓ No code review issues
 
+**Note:** Testing with original paths requires `consolidated_locations.csv` in `modular/` directory.
+
 ## Files Modified
 
-- `modular/typhoon_extraction.py` - Updated path resolution
+- `modular/typhoon_extraction.py` - **Reverted to original paths**
+- `modular/advisory_scraper.py` - **Reverted to original paths**
 - `modular/advisory_scraper.py` - Fixed typo and path resolution
 
 ## Files Added
@@ -148,21 +153,22 @@ All modular files have been tested and verified:
 
 - ✓ Python 3.8.10+
 - ✓ All existing dependencies (no new requirements)
-- ✓ Works from any working directory
+- ✓ Requires `consolidated_locations.csv` in `modular/` directory
 - ✓ Compatible with external project imports
 - ✓ Backward compatible with existing code
 
 ## Next Steps for Workbench
 
-1. Update your import path to point to the Pagasa-WebScraper directory
-2. Import `get_pagasa_data` from the modular package
-3. Call the function as before - no code changes needed
-4. Refer to `examples/example_workbench_integration.py` for advanced patterns
+1. **Copy CSV file:** Copy `bin/consolidated_locations.csv` to `modular/consolidated_locations.csv`
+2. Update your import path to point to the Pagasa-WebScraper directory
+3. Import `get_pagasa_data` from the modular package
+4. Call the function as before - no code changes needed
+5. Refer to `examples/example_workbench_integration.py` for advanced patterns
 
 ## Support
 
 If you encounter any issues:
-1. Check that `bin/consolidated_locations.csv` exists in the project
+1. **Ensure `consolidated_locations.csv` is in the `modular/` directory** (required for modular scripts)
 2. Verify Python path includes the Pagasa-WebScraper directory
 3. Check requirements are installed: `pip install -r requirements.txt`
 4. Review `modular/README.md` for detailed usage instructions
@@ -170,5 +176,6 @@ If you encounter any issues:
 ---
 
 **Last Updated:** 2026-02-06
-**Status:** ✓ Ready for Production
-**Breaking Changes:** None
+**Status:** ✓ Documentation Added, Path Changes Reverted
+**Breaking Changes:** None (API interface unchanged)
+**Important:** Requires `consolidated_locations.csv` in `modular/` directory

@@ -6,6 +6,10 @@ This directory contains the modular, library version of the PAGASA typhoon bulle
 
 The modular files provide a clean, reusable API for integrating PAGASA typhoon data extraction into other systems without running command-line scripts.
 
+## Important: File Dependencies
+
+⚠️ **Required File:** The modular scripts expect `consolidated_locations.csv` to be located in the **same directory** as the modular scripts (i.e., in `modular/` directory). If you're integrating this into another project, ensure you copy `consolidated_locations.csv` into the `modular/` directory, or the scripts will fail to initialize.
+
 ## Main Entry Point
 
 The primary function to use is `get_pagasa_data()` from `typhoonhub.py`:
@@ -75,7 +79,7 @@ The modular files differ from the main scripts in several ways:
 2. **Library Usage**: Designed to be imported, not executed
 3. **Minimal Output**: Uses `sys.stderr` for warnings/errors, not verbose stdout
 4. **Return Values**: Functions return data structures instead of printing results
-5. **Path Handling**: Smart path resolution for `bin/consolidated_locations.csv` that works from any working directory
+5. **Path Handling**: Expects `consolidated_locations.csv` in the same `modular/` directory
 
 ## Integration Example
 
@@ -151,11 +155,13 @@ if result:
 
 ## Updates
 
-This modular package was last updated on 2026-02-06 to:
-- Fix path resolution for `bin/consolidated_locations.csv`
-- Fix typo in TARGET_URL constant
-- Ensure compatibility when imported from different working directories
-- Maintain API compatibility with Workbench integration
+This modular package was last updated on 2026-02-06:
+- Added comprehensive documentation (README.md)
+- Added integration examples (example_workbench_integration.py)
+- Maintained original filepath configuration in modular scripts
+- Ensure API compatibility with Workbench integration
+
+**Note:** Path changes to modular scripts were reverted per user request. The scripts use their original configuration expecting `consolidated_locations.csv` in the `modular/` directory.
 
 ## License
 
